@@ -72,6 +72,8 @@ model FuenteIngreso {
   activo     Boolean        @default(true)
   createdAt  DateTime       @default(now())
   ingresos   IngresoManual[]
+
+  @@index([activo])
 }
 
 model IngresoManual {
@@ -82,6 +84,9 @@ model IngresoManual {
   fuenteId    String?
   fuente      FuenteIngreso? @relation(fields: [fuenteId], references: [id])
   createdAt   DateTime       @default(now())
+
+  @@index([fuenteId])
+  @@index([fecha])
 }
 
 model ConfiguracionSalario {
