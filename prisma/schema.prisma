@@ -88,10 +88,3 @@ model IngresoManual {
   @@index([fuenteId])
   @@index([fecha])
 }
-
-model ConfiguracionSalario {
-  id                   Int      @id @default(1)
-  monto                Decimal  @db.Decimal(10, 2)
-  fechaBaseProximoPago DateTime
-  updatedAt            DateTime @updatedAt
-}
