@@ -89,6 +89,7 @@ export default function CreditosPage() {
         <CreditoForm
           initial={{
             ...editando,
+            tipo: editando.tipo as 'PRESTAMO' | 'TARJETA',
             montoTotal: String(editando.montoTotal),
             saldoActual: String(editando.saldoActual),
             pagoMensual: String(editando.pagoMensual),
