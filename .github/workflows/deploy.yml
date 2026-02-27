@@ -16,7 +16,7 @@ jobs:
           echo "🚀 Iniciando redeploy de finanzas-ardepa..."
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            "https://api.hostinger.com/v1/virtual-machines/${{ vars.HOSTINGER_VPS_ID }}/projects" \
+            "https://developers.hostinger.com/api/vps/v1/virtual-machines/${{ vars.HOSTINGER_VPS_ID }}/docker" \
             -H "Authorization: Bearer ${{ secrets.HOSTINGER_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{
