@@ -19,8 +19,11 @@ export async function POST(req: NextRequest) {
       pagoMensual: body.pagoMensual,
       pagoMinimo: body.pagoMinimo || null,
       fechaCorte: body.fechaCorte ? Number(body.fechaCorte) : null,
-      diaPago: Number(body.diaPago),
+      diaPago: Number(body.diaPago) || 1,
       tasaInteres: body.tasaInteres || null,
+      frecuencia: body.frecuencia ?? 'MENSUAL',
+      diaSemana: body.diaSemana != null && body.diaSemana !== '' ? Number(body.diaSemana) : null,
+      fechaBase: body.fechaBase ? new Date(body.fechaBase) : null,
     },
   })
   return NextResponse.json(credito, { status: 201 })
