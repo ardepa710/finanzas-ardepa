@@ -1,0 +1,39 @@
+name: Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Redeploy en VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger redeploy en Hostinger
+        run: |
+          echo "🚀 Iniciando redeploy de finanzas-ardepa..."
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.hostinger.com/v1/virtual-machines/${{ vars.HOSTINGER_VPS_ID }}/projects" \
+            -H "Authorization: Bearer ${{ secrets.HOSTINGER_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "project_name": "finanzas-ardepa",
+              "content": "https://github.com/${{ github.repository }}",
+              "environment": "DB_USER=finanzas\nDB_PASSWORD=${{ secrets.DB_PASSWORD }}\nTELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}\nTELEGRAM_ALLOWED_CHAT_ID=${{ secrets.TELEGRAM_ALLOWED_CHAT_ID }}"
+            }')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Redeploy iniciado correctamente"
+          else
+            echo "❌ Error en el redeploy (HTTP $HTTP_CODE)"
+            exit 1
+          fi
