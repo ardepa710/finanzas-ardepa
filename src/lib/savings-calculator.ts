@@ -1,120 +1,145 @@
+export type FrecuenciaPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL'
+
+export interface FuenteIngresoInput {
+  nombre?: string
+  monto?: number
+  frecuencia: FrecuenciaPago
+  diaMes?: number        // only MENSUAL
+  diaSemana?: number     // 0=Sun..6=Sat, only SEMANAL/QUINCENAL
+  fechaBase?: Date       // required for SEMANAL/QUINCENAL
+}
+
 export interface CreditoInput {
   nombre: string
   pagoMensual: number
-  diaPago: number // day of month 1-31
+  frecuencia: FrecuenciaPago
+  diaPago?: number       // only MENSUAL
+  diaSemana?: number     // only SEMANAL/QUINCENAL
+  fechaBase?: Date       // only SEMANAL/QUINCENAL
 }
 
-export interface AhorroPorCredito {
-  nombre: string
-  montoTotal: number
-  porPago: number[]
+export interface DesgloseCobro {
+  creditoNombre: string
+  monto: number
+}
+
+export interface ProyeccionCobro {
+  fecha: Date
+  fuenteNombre: string
+  montoIngreso: number
+  desglose: DesgloseCobro[]
+  totalApartar: number
+  disponible: number
 }
 
 export interface ResumenAhorro {
-  totalProximoPago: number
-  desglose: AhorroPorCredito[]
-  proximaFechaPago: Date
-  diasParaProximoPago: number
-  salarioDisponible: number
+  cobros: ProyeccionCobro[]
 }
 
-/**
- * Returns the next N salary paydays.
- * Salary is paid every 14 days (alternating Mondays) starting from a known base date.
- */
-export function getNextPaydays(
-  fechaBase: Date,
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
+}
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function getNextByInterval(fechaBase: Date, hoy: Date, step: number, n: number): Date[] {
+  let cursor = startOfDay(fechaBase)
+  const today = startOfDay(hoy)
+  while (cursor <= today) {
+    cursor = addDays(cursor, step)
+  }
+  const result: Date[] = []
+  for (let i = 0; i < n; i++) {
+    result.push(new Date(cursor))
+    cursor = addDays(cursor, step)
+  }
+  return result
+}
+
+export function getNextOccurrences(
+  fuente: FuenteIngresoInput,
   hoy: Date,
-  cantidad: number
+  n: number
 ): Date[] {
-  const pagos: Date[] = []
-  let cursor = new Date(fechaBase)
-
-  // Advance until we find a future payday
-  while (cursor <= hoy) {
-    cursor = new Date(cursor.getTime() + 14 * 24 * 60 * 60 * 1000)
+  if (fuente.frecuencia === 'MENSUAL') {
+    const dia = fuente.diaMes!
+    const result: Date[] = []
+    const today = startOfDay(hoy)
+    let year = today.getFullYear()
+    let month = today.getMonth()
+    while (result.length < n) {
+      const candidate = new Date(year, month, dia)
+      if (candidate > today) result.push(candidate)
+      month++
+      if (month > 11) { month = 0; year++ }
+    }
+    return result
   }
-
-  for (let i = 0; i < cantidad; i++) {
-    pagos.push(new Date(cursor))
-    cursor = new Date(cursor.getTime() + 14 * 24 * 60 * 60 * 1000)
-  }
-
-  return pagos
+  const step = fuente.frecuencia === 'SEMANAL' ? 7 : 14
+  return getNextByInterval(fuente.fechaBase!, hoy, step, n)
 }
 
-/**
- * Returns the next due date for a credit given its day of month.
- */
-function getProximaFechaVencimiento(diaPago: number, hoy: Date): Date {
-  const year = hoy.getFullYear()
-  const month = hoy.getMonth()
-  const dayToday = hoy.getDate()
-
-  if (diaPago > dayToday) {
-    return new Date(year, month, diaPago, 23, 59, 0)
-  } else {
-    return new Date(year, month + 1, diaPago, 23, 59, 0)
+export function getNextCreditDueDate(credito: CreditoInput, hoy: Date): Date {
+  if (credito.frecuencia === 'MENSUAL') {
+    const today = startOfDay(hoy)
+    const dia = credito.diaPago!
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), dia, 23, 59, 0)
+    if (thisMonth > today) return thisMonth
+    return new Date(today.getFullYear(), today.getMonth() + 1, dia, 23, 59, 0)
   }
+  const step = credito.frecuencia === 'SEMANAL' ? 7 : 14
+  let cursor = startOfDay(credito.fechaBase!)
+  const today = startOfDay(hoy)
+  while (cursor <= today) {
+    cursor = addDays(cursor, step)
+  }
+  return cursor
 }
 
-/**
- * Calculates how much to set aside from each payday to cover a credit payment.
- * Distributes the payment evenly across paydays that fall before the due date.
- */
-export function calcularAhorroPorCredito(
-  credito: CreditoInput,
-  proximosPagos: Date[],
-  fechaVencimiento: Date
-): AhorroPorCredito {
-  const pagosAntesDeVencer = proximosPagos.filter(p => p < fechaVencimiento)
-  const n = pagosAntesDeVencer.length || 1
-  const porPago = Array(proximosPagos.length).fill(0)
-
-  for (let i = 0; i < n && i < porPago.length; i++) {
-    porPago[i] = credito.pagoMensual / n
-  }
-
-  return {
-    nombre: credito.nombre,
-    montoTotal: credito.pagoMensual,
-    porPago,
-  }
-}
-
-/**
- * Calculates the full savings recommendation for all active credits.
- */
 export function calcularResumenAhorro(
   creditos: CreditoInput[],
-  fechaBase: Date,
+  fuentes: FuenteIngresoInput[],
   hoy: Date,
-  salario: number = 22000
+  horizonte = 3
 ): ResumenAhorro {
-  const proximosPagos = getNextPaydays(fechaBase, hoy, 6)
-  const proximaFechaPago = proximosPagos[0]
+  const todosLosCobros: Array<{ fecha: Date; fuente: FuenteIngresoInput }> = []
+  for (const fuente of fuentes) {
+    const fechas = getNextOccurrences(fuente, hoy, horizonte)
+    fechas.forEach(fecha => todosLosCobros.push({ fecha, fuente }))
+  }
+  todosLosCobros.sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
 
-  const diasParaProximoPago = Math.ceil(
-    (proximaFechaPago.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)
-  )
+  const cobrosFinal = todosLosCobros.slice(0, horizonte)
 
-  const desglose = creditos.map(credito => {
-    const fechaVencimiento = getProximaFechaVencimiento(credito.diaPago, hoy)
-    return calcularAhorroPorCredito(credito, proximosPagos, fechaVencimiento)
+  const cobros: ProyeccionCobro[] = cobrosFinal.map(({ fecha, fuente }) => {
+    const desglose: DesgloseCobro[] = []
+
+    for (const credito of creditos) {
+      const vencimiento = getNextCreditDueDate(credito, hoy)
+      const allFuente = getNextOccurrences(fuente, hoy, horizonte * 2)
+      const cobrosAntesDeVencer = allFuente.filter(f => f < vencimiento)
+      const n = cobrosAntesDeVencer.length || 1
+
+      if (fecha < vencimiento || cobrosAntesDeVencer.length === 0) {
+        const porCobro = Math.round((credito.pagoMensual / n) * 100) / 100
+        desglose.push({ creditoNombre: credito.nombre, monto: porCobro })
+      }
+    }
+
+    const totalApartar = Math.round(desglose.reduce((s, d) => s + d.monto, 0) * 100) / 100
+    const montoIngreso = fuente.monto ?? 0
+
+    return {
+      fecha,
+      fuenteNombre: fuente.nombre ?? 'Ingreso',
+      montoIngreso,
+      desglose,
+      totalApartar,
+      disponible: Math.round((montoIngreso - totalApartar) * 100) / 100,
+    }
   })
 
-  const totalProximoPago = desglose.reduce(
-    (sum, c) => sum + (c.porPago[0] || 0),
-    0
-  )
-
-  const rounded = Math.round(totalProximoPago * 100) / 100
-
-  return {
-    totalProximoPago: rounded,
-    desglose,
-    proximaFechaPago,
-    diasParaProximoPago,
-    salarioDisponible: Math.round((salario - rounded) * 100) / 100,
-  }
+  return { cobros }
 }
