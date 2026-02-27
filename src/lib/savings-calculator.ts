@@ -5,6 +5,7 @@ export interface FuenteIngresoInput {
   monto?: number
   frecuencia: FrecuenciaPago
   diaMes?: number        // only MENSUAL
+  /** Almacenado para display en UI. Los cálculos usan únicamente fechaBase + intervalo. */
   diaSemana?: number     // 0=Sun..6=Sat, only SEMANAL/QUINCENAL
   fechaBase?: Date       // required for SEMANAL/QUINCENAL
 }
@@ -14,6 +15,7 @@ export interface CreditoInput {
   pagoMensual: number
   frecuencia: FrecuenciaPago
   diaPago?: number       // only MENSUAL
+  /** Almacenado para display en UI. Los cálculos usan únicamente fechaBase + intervalo. */
   diaSemana?: number     // only SEMANAL/QUINCENAL
   fechaBase?: Date       // only SEMANAL/QUINCENAL
 }
@@ -64,7 +66,8 @@ export function getNextOccurrences(
   n: number
 ): Date[] {
   if (fuente.frecuencia === 'MENSUAL') {
-    const dia = fuente.diaMes!
+    if (fuente.diaMes == null) throw new Error('FuenteIngreso MENSUAL requiere diaMes')
+    const dia = fuente.diaMes
     const result: Date[] = []
     const today = startOfDay(hoy)
     let year = today.getFullYear()
@@ -78,19 +81,22 @@ export function getNextOccurrences(
     return result
   }
   const step = fuente.frecuencia === 'SEMANAL' ? 7 : 14
-  return getNextByInterval(fuente.fechaBase!, hoy, step, n)
+  if (!fuente.fechaBase) throw new Error(`FuenteIngreso ${fuente.frecuencia} requiere fechaBase`)
+  return getNextByInterval(fuente.fechaBase, hoy, step, n)
 }
 
 export function getNextCreditDueDate(credito: CreditoInput, hoy: Date): Date {
   if (credito.frecuencia === 'MENSUAL') {
     const today = startOfDay(hoy)
-    const dia = credito.diaPago!
+    if (credito.diaPago == null) throw new Error('Credito MENSUAL requiere diaPago')
+    const dia = credito.diaPago
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), dia, 23, 59, 0)
     if (thisMonth > today) return thisMonth
     return new Date(today.getFullYear(), today.getMonth() + 1, dia, 23, 59, 0)
   }
   const step = credito.frecuencia === 'SEMANAL' ? 7 : 14
-  let cursor = startOfDay(credito.fechaBase!)
+  if (!credito.fechaBase) throw new Error(`Credito ${credito.frecuencia} requiere fechaBase`)
+  let cursor = startOfDay(credito.fechaBase)
   const today = startOfDay(hoy)
   while (cursor <= today) {
     cursor = addDays(cursor, step)
