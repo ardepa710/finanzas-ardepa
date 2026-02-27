@@ -33,18 +33,21 @@ export default function CreditosPage() {
   useEffect(() => { cargar() }, [])
 
   const guardar = async (data: any) => {
-    if (editando) {
-      await fetch(`/api/creditos/${editando.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-    } else {
-      await fetch('/api/creditos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
+    const res = editando
+      ? await fetch(`/api/creditos/${editando.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      : await fetch('/api/creditos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+
+    if (!res.ok) {
+      alert('Error al guardar el crédito. Intenta de nuevo.')
+      return
     }
     setShowForm(false)
     setEditando(null)

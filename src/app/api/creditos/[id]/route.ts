@@ -15,10 +15,10 @@ export async function PUT(
       montoTotal: body.montoTotal,
       saldoActual: body.saldoActual,
       pagoMensual: body.pagoMensual,
-      pagoMinimo: body.pagoMinimo ?? null,
+      pagoMinimo: body.pagoMinimo || null,
       fechaCorte: body.fechaCorte ? Number(body.fechaCorte) : null,
       diaPago: Number(body.diaPago),
-      tasaInteres: body.tasaInteres ?? null,
+      tasaInteres: body.tasaInteres || null,
       activo: body.activo,
     },
   })
