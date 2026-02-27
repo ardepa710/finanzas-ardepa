@@ -12,6 +12,12 @@ enum TipoCredito {
   TARJETA
 }
 
+enum FrecuenciaPago {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
 enum CategoriaGasto {
   ALIMENTACION
   TRANSPORTE
@@ -27,19 +33,22 @@ enum FuenteGasto {
 }
 
 model Credito {
-  id           String      @id @default(cuid())
-  nombre       String
-  tipo         TipoCredito
-  montoTotal   Decimal     @db.Decimal(10, 2)
-  saldoActual  Decimal     @db.Decimal(10, 2)
-  pagoMensual  Decimal     @db.Decimal(10, 2)
-  pagoMinimo   Decimal?    @db.Decimal(10, 2)
-  fechaCorte   Int?
-  diaPago      Int
-  tasaInteres  Decimal?    @db.Decimal(5, 2)
-  activo       Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id          String         @id @default(cuid())
+  nombre      String
+  tipo        TipoCredito
+  montoTotal  Decimal        @db.Decimal(10, 2)
+  saldoActual Decimal        @db.Decimal(10, 2)
+  pagoMensual Decimal        @db.Decimal(10, 2)
+  pagoMinimo  Decimal?       @db.Decimal(10, 2)
+  fechaCorte  Int?
+  diaPago     Int
+  tasaInteres Decimal?       @db.Decimal(5, 2)
+  activo      Boolean        @default(true)
+  frecuencia  FrecuenciaPago @default(MENSUAL)
+  diaSemana   Int?
+  fechaBase   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
 model Gasto {
@@ -49,6 +58,29 @@ model Gasto {
   categoria   CategoriaGasto
   fecha       DateTime       @default(now())
   fuente      FuenteGasto    @default(WEB)
+  createdAt   DateTime       @default(now())
+}
+
+model FuenteIngreso {
+  id         String         @id @default(cuid())
+  nombre     String
+  monto      Decimal        @db.Decimal(10, 2)
+  frecuencia FrecuenciaPago
+  diaSemana  Int?
+  diaMes     Int?
+  fechaBase  DateTime
+  activo     Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  ingresos   IngresoManual[]
+}
+
+model IngresoManual {
+  id          String         @id @default(cuid())
+  monto       Decimal        @db.Decimal(10, 2)
+  fecha       DateTime       @default(now())
+  descripcion String?
+  fuenteId    String?
+  fuente      FuenteIngreso? @relation(fields: [fuenteId], references: [id])
   createdAt   DateTime       @default(now())
 }
 
