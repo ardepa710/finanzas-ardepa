@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bot": "tsx scripts/bot.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -17,6 +18,7 @@
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@types/pg": "^8.16.0",
+    "dotenv": "^17.3.1",
     "next": "16.1.6",
     "node-telegram-bot-api": "^0.67.0",
     "pg": "^8.19.0",
