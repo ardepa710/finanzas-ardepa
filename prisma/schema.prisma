@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoCredito {
+  PRESTAMO
+  TARJETA
+}
+
+enum CategoriaGasto {
+  ALIMENTACION
+  TRANSPORTE
+  ENTRETENIMIENTO
+  SALUD
+  SERVICIOS
+  OTROS
+}
+
+enum FuenteGasto {
+  TELEGRAM
+  WEB
+}
+
+model Credito {
+  id           String      @id @default(cuid())
+  nombre       String
+  tipo         TipoCredito
+  montoTotal   Decimal     @db.Decimal(10, 2)
+  saldoActual  Decimal     @db.Decimal(10, 2)
+  pagoMensual  Decimal     @db.Decimal(10, 2)
+  pagoMinimo   Decimal?    @db.Decimal(10, 2)
+  fechaCorte   Int?
+  diaPago      Int
+  tasaInteres  Decimal?    @db.Decimal(5, 2)
+  activo       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Gasto {
+  id          String         @id @default(cuid())
+  descripcion String
+  monto       Decimal        @db.Decimal(10, 2)
+  categoria   CategoriaGasto
+  fecha       DateTime       @default(now())
+  fuente      FuenteGasto    @default(WEB)
+  createdAt   DateTime       @default(now())
+}
+
+model ConfiguracionSalario {
+  id                   Int      @id @default(1)
+  monto                Decimal  @db.Decimal(10, 2)
+  fechaBaseProximoPago DateTime
+  updatedAt            DateTime @updatedAt
+}
