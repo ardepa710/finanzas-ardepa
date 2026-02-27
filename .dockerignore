@@ -1,0 +1,33 @@
+# Dependencies (se reinstalan en el build)
+node_modules
+
+# Build output local
+.next
+
+# Git
+.git
+.gitignore
+
+# Entornos locales (NUNCA al contenedor)
+.env
+.env.local
+.env.*.local
+
+# Docs y plans
+docs/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tests
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

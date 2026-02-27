@@ -1,0 +1,76 @@
+# ─────────────────────────────────────────────
+#  FINANZAS ARDEPA — Docker Compose
+#  Servicios: db, migrate, web, bot
+# ─────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: finanzas_ardepa
+      POSTGRES_USER: ${DB_USER:-finanzas}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requerida en .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-finanzas} -d finanzas_ardepa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - finanzas-net
+
+  # ── Migraciones (corre y termina) ───────────
+  migrate:
+    build: .
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-finanzas}:${DB_PASSWORD}@db:5432/finanzas_ardepa
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - finanzas-net
+    restart: "no"
+
+  # ── App Web (Next.js) ────────────────────────
+  web:
+    build: .
+    restart: unless-stopped
+    command: npm start
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-finanzas}:${DB_PASSWORD}@db:5432/finanzas_ardepa
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - finanzas-net
+
+  # ── Bot Telegram (polling) ───────────────────
+  bot:
+    build: .
+    restart: unless-stopped
+    command: npm run bot
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-finanzas}:${DB_PASSWORD}@db:5432/finanzas_ardepa
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN requerido en .env}
+      TELEGRAM_ALLOWED_CHAT_ID: ${TELEGRAM_ALLOWED_CHAT_ID:?TELEGRAM_ALLOWED_CHAT_ID requerido en .env}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - finanzas-net
+
+volumes:
+  pgdata:
+
+networks:
+  finanzas-net:
+    driver: bridge
