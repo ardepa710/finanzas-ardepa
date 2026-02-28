@@ -10,6 +10,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
+  if (!body.fechaBase) {
+    return NextResponse.json({ error: 'fechaBase is required' }, { status: 400 })
+  }
   const gastoFijo = await prisma.gastoFijo.create({
     data: {
       nombre: body.nombre,

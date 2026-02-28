@@ -59,7 +59,8 @@ export default function GastosFijosPage() {
 
   const desactivar = async (id: string) => {
     if (!confirm('¿Desactivar este gasto fijo?')) return
-    await fetch(`/api/gastos-fijos/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/gastos-fijos/${id}`, { method: 'DELETE' })
+    if (!res.ok) { alert('Error al desactivar'); return }
     cargar()
   }
 

@@ -7,6 +7,9 @@ export async function PUT(
 ) {
   const { id } = await params
   const body = await req.json()
+  if (!body.fechaBase) {
+    return NextResponse.json({ error: 'fechaBase is required' }, { status: 400 })
+  }
   const gastoFijo = await prisma.gastoFijo.update({
     where: { id },
     data: {
