@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import NotificationBell from '@/features/alertas/components/NotificationBell'
 
 const links = [
   { href: '/', label: '📊 Dashboard' },
@@ -16,8 +17,13 @@ export default function Sidebar() {
   return (
     <aside className="w-56 min-h-screen bg-slate-900 border-r border-slate-700 flex flex-col shrink-0">
       <div className="p-4 border-b border-slate-700">
-        <h1 className="text-lg font-bold text-emerald-400 tracking-tight">FINANZAS</h1>
-        <p className="text-xs text-slate-400 font-semibold tracking-widest">ARDEPA</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-lg font-bold text-emerald-400 tracking-tight">FINANZAS</h1>
+            <p className="text-xs text-slate-400 font-semibold tracking-widest">ARDEPA</p>
+          </div>
+          <NotificationBell />
+        </div>
       </div>
       <nav className="flex-1 p-3 space-y-1">
         {links.map(link => (
