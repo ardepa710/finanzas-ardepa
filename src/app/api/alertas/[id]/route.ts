@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { withErrorHandling, APIError, ErrorCodes } from '@/lib/api-error'
 import { notificacionSchema } from '@/shared/validations/schemas'
+import { Prisma } from '@/generated/prisma/client'
 import { z } from 'zod'
 
 // Extended schema for updates (allows leida and archivar fields)
@@ -21,14 +22,13 @@ export const PUT = withErrorHandling(async (req: Request, { params }: { params: 
   }
 
   try {
-    const updateData: any = {}
-    if (result.data.tipo !== undefined) updateData.tipo = result.data.tipo
-    if (result.data.titulo !== undefined) updateData.titulo = result.data.titulo
-    if (result.data.mensaje !== undefined) updateData.mensaje = result.data.mensaje
-    if (result.data.prioridad !== undefined) updateData.prioridad = result.data.prioridad
-    if (result.data.metadata !== undefined) updateData.metadata = result.data.metadata
-    if (result.data.leida !== undefined) updateData.leida = result.data.leida
-    if (result.data.archivar !== undefined) updateData.archivar = result.data.archivar
+    // Filter out undefined values and build update data with proper typing
+    const updateData = Object.entries(result.data).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key as keyof Prisma.NotificacionUpdateInput] = value
+      }
+      return acc
+    }, {} as Prisma.NotificacionUpdateInput)
 
     const notificacion = await prisma.notificacion.update({
       where: { id },
