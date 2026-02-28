@@ -82,6 +82,8 @@ export interface ReporteCashflow {
  * Generate expense report with category breakdown and trends
  */
 export async function generateGastosReport(range: DateRange): Promise<ReporteGastos> {
+  // TODO: N+1 query issue - groupBy + separate categoria fetch
+  // Can be optimized with findMany + include once tests support it
   // Get current period expenses grouped by category
   const gastosActuales = await prisma.gasto.groupBy({
     by: ['categoriaId'],
@@ -97,7 +99,7 @@ export async function generateGastosReport(range: DateRange): Promise<ReporteGas
   })
 
   // Get category names
-  const categoriaIds = gastosActuales.map((g: any) => g.categoriaId)
+  const categoriaIds = gastosActuales.map((g) => g.categoriaId)
   const categorias = await prisma.categoria.findMany({
     where: {
       id: {
@@ -110,7 +112,7 @@ export async function generateGastosReport(range: DateRange): Promise<ReporteGas
     },
   })
 
-  const categoriaMap = new Map(categorias.map((c: any) => [c.id, c.nombre]))
+  const categoriaMap = new Map(categorias.map((c) => [c.id, c.nombre]))
 
   // Calculate total
   const total = gastosActuales.reduce(
@@ -134,12 +136,12 @@ export async function generateGastosReport(range: DateRange): Promise<ReporteGas
   })
 
   const previousMap = new Map(
-    gastosPrevios.map((g: any) => [g.categoriaId, Number(g._sum.monto || 0)])
+    gastosPrevios.map((g) => [g.categoriaId, Number(g._sum.monto || 0)])
   )
 
   // Build category breakdown with trends
   const porCategoria: CategoriaGasto[] = gastosActuales
-    .map((g: any) => {
+    .map((g) => {
       const monto = Number(g._sum.monto || 0)
       const categoria = categoriaMap.get(g.categoriaId) || 'Sin categoría'
       const porcentaje = total > 0 ? (monto / total) * 100 : 0
@@ -153,11 +155,11 @@ export async function generateGastosReport(range: DateRange): Promise<ReporteGas
         tendencia,
       }
     })
-    .sort((a: any, b: any) => b.monto - a.monto)
+    .sort((a, b) => b.monto - a.monto)
 
   // Calculate overall trend
   const totalPrevio = gastosPrevios.reduce(
-    (sum: number, g: any) => sum + (g._sum.monto ? Number(g._sum.monto) : 0),
+    (sum: number, g) => sum + (g._sum.monto ? Number(g._sum.monto) : 0),
     0
   )
   const tendenciaGeneral = detectTrend(total, totalPrevio)
@@ -213,6 +215,8 @@ export async function generateIngresosReport(range: DateRange): Promise<ReporteI
   const balance = totalIngresos - totalGastos
   const tasaAhorro = totalIngresos > 0 ? (balance / totalIngresos) * 100 : 0
 
+  // TODO: N+1 query issue - groupBy + separate fuente fetch
+  // Can be optimized with findMany + include once tests support it
   // Get income by source
   const ingresosPorFuente = await prisma.ingresoManual.groupBy({
     by: ['fuenteId'],
@@ -244,9 +248,9 @@ export async function generateIngresosReport(range: DateRange): Promise<ReporteI
     },
   })
 
-  const fuenteMap = new Map(fuentes.map((f: any) => [f.id, f.nombre]))
+  const fuenteMap = new Map(fuentes.map((f) => [f.id, f.nombre]))
 
-  const porFuente = ingresosPorFuente.map((i: any) => {
+  const porFuente = ingresosPorFuente.map((i) => {
     const monto = Number(i._sum.monto || 0)
     const fuente = i.fuenteId ? fuenteMap.get(i.fuenteId) || 'Sin fuente' : 'Manual'
     const porcentaje = totalIngresos > 0 ? (monto / totalIngresos) * 100 : 0
@@ -258,6 +262,8 @@ export async function generateIngresosReport(range: DateRange): Promise<ReporteI
     }
   })
 
+  // TODO: N+1 query issue - groupBy + separate categoria fetch
+  // Can be optimized with findMany + include once tests support it
   // Get expenses by category
   const gastosPorCategoria = await prisma.gasto.groupBy({
     by: ['categoriaId'],
@@ -287,7 +293,7 @@ export async function generateIngresosReport(range: DateRange): Promise<ReporteI
 
   const categoriaMap = new Map(categorias.map((c) => [c.id, c.nombre]))
 
-  const porCategoriaGasto = gastosPorCategoria.map((g: any) => {
+  const porCategoriaGasto = gastosPorCategoria.map((g) => {
     const monto = Number(g._sum.monto || 0)
     const categoria = categoriaMap.get(g.categoriaId) || 'Sin categoría'
     const porcentaje = totalGastos > 0 ? (monto / totalGastos) * 100 : 0
@@ -321,17 +327,17 @@ export async function generateDeudaReport(range: DateRange): Promise<ReporteDeud
     },
   })
 
-  const deudaTotal = creditos.reduce((sum: number, c: any) => sum + Number(c.saldoActual), 0)
+  const deudaTotal = creditos.reduce((sum: number, c) => sum + Number(c.saldoActual), 0)
 
   // Calculate initial debt (this is an approximation)
   // In a real scenario, you'd track historical balances
-  const deudaInicial = creditos.reduce((sum: number, c: any) => sum + Number(c.montoTotal), 0)
+  const deudaInicial = creditos.reduce((sum: number, c) => sum + Number(c.montoTotal), 0)
 
   // Calculate total payments made (approximation)
   const pagosTotales = deudaInicial - deudaTotal
 
   // Calculate interest paid (approximation based on tasa interes)
-  const interesesPagados = creditos.reduce((sum: number, c: any) => {
+  const interesesPagados = creditos.reduce((sum: number, c) => {
     if (c.tasaInteres) {
       const principal = Number(c.montoTotal) - Number(c.saldoActual)
       const interesAprox = principal * (Number(c.tasaInteres) / 100) * 0.5 // Rough estimate
@@ -341,7 +347,7 @@ export async function generateDeudaReport(range: DateRange): Promise<ReporteDeud
   }, 0)
 
   // Build per-credit breakdown
-  const porCredito = creditos.map((c: any) => {
+  const porCredito = creditos.map((c) => {
     const saldoActual = Number(c.saldoActual)
     const saldoInicial = Number(c.montoTotal)
     const pagado = saldoInicial - saldoActual
@@ -376,11 +382,16 @@ export async function generateCashflowReport(
   const sixMonthsAgo = new Date()
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
+  // Optimize memory by selecting only needed fields
   const ingresos = await prisma.ingresoManual.findMany({
     where: {
       fecha: {
         gte: sixMonthsAgo,
       },
+    },
+    select: {
+      fecha: true,
+      monto: true,
     },
     orderBy: {
       fecha: 'asc',
@@ -392,6 +403,10 @@ export async function generateCashflowReport(
       fecha: {
         gte: sixMonthsAgo,
       },
+    },
+    select: {
+      fecha: true,
+      monto: true,
     },
     orderBy: {
       fecha: 'asc',
@@ -417,7 +432,7 @@ export async function generateCashflowReport(
   }
 
   // Process income
-  ingresos.forEach((ingreso: any) => {
+  ingresos.forEach((ingreso) => {
     const key = getPeriodKey(ingreso.fecha)
     if (!periodoMap.has(key)) {
       periodoMap.set(key, {
@@ -435,7 +450,7 @@ export async function generateCashflowReport(
   })
 
   // Process expenses
-  gastos.forEach((gasto: any) => {
+  gastos.forEach((gasto) => {
     const key = getPeriodKey(gasto.fecha)
     if (!periodoMap.has(key)) {
       periodoMap.set(key, {

@@ -19,9 +19,9 @@ export const GET = withErrorHandling(async (req: Request) => {
     )
   }
 
-  // Parse and validate dates
-  const inicioDate = new Date(inicio)
-  const finDate = new Date(fin)
+  // Parse and validate dates (explicit UTC to avoid timezone issues)
+  const inicioDate = new Date(inicio + 'T00:00:00Z')
+  const finDate = new Date(fin + 'T23:59:59Z')
 
   if (isNaN(inicioDate.getTime()) || isNaN(finDate.getTime())) {
     throw new APIError(ErrorCodes.VALIDATION_ERROR, 'Fechas inválidas', 400)
@@ -41,5 +41,13 @@ export const GET = withErrorHandling(async (req: Request) => {
     fin: finDate,
   })
 
-  return report
+  // Add disclaimer about limitations
+  return {
+    data: report,
+    warnings: [
+      'Este reporte muestra el estado actual de deudas, no su evolución histórica dentro del período seleccionado.',
+      'Los valores de deuda inicial y pagos totales son aproximaciones basadas en el saldo actual.',
+      'Los intereses pagados son estimaciones y pueden no reflejar los valores reales.',
+    ],
+  }
 })

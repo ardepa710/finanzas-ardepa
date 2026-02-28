@@ -19,9 +19,9 @@ export const GET = withErrorHandling(async (req: Request) => {
     )
   }
 
-  // Parse and validate dates
-  const inicioDate = new Date(inicio)
-  const finDate = new Date(fin)
+  // Parse and validate dates (explicit UTC to avoid timezone issues)
+  const inicioDate = new Date(inicio + 'T00:00:00Z')
+  const finDate = new Date(fin + 'T23:59:59Z')
 
   if (isNaN(inicioDate.getTime()) || isNaN(finDate.getTime())) {
     throw new APIError(ErrorCodes.VALIDATION_ERROR, 'Fechas inválidas', 400)
