@@ -8,6 +8,7 @@ const links = [
   { href: '/gastos', label: '💸 Gastos' },
   { href: '/gastos-fijos', label: '🔒 Gastos fijos' },
   { href: '/creditos', label: '💳 Créditos' },
+  { href: '/presupuestos', label: '💰 Presupuestos' },
 ]
 
 export default function Sidebar() {
