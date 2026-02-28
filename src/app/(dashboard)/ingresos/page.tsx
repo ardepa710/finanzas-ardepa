@@ -113,6 +113,7 @@ export default function IngresosPage() {
           <FuenteIngresoForm
             initial={{
               ...editandoFuente,
+              frecuencia: editandoFuente.frecuencia as 'SEMANAL' | 'QUINCENAL' | 'MENSUAL',
               monto: String(editandoFuente.monto),
               diaSemana: editandoFuente.diaSemana != null ? String(editandoFuente.diaSemana) : '',
               diaMes: editandoFuente.diaMes != null ? String(editandoFuente.diaMes) : '',

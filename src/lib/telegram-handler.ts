@@ -94,33 +94,51 @@ export async function handleTelegramMessage(text: string): Promise<string> {
   }
 
   if (comando === '/ahorro') {
-    const config = await prisma.configuracionSalario.findFirst()
-    const creditos = await prisma.credito.findMany({ where: { activo: true } })
-    if (!config) return '⚙️ Sin configuración de salario.'
+    const [fuentes, creditos] = await Promise.all([
+      prisma.fuenteIngreso.findMany({ where: { activo: true } }),
+      prisma.credito.findMany({ where: { activo: true } }),
+    ])
+    if (fuentes.length === 0) return '⚙️ Sin fuentes de ingreso configuradas.'
     if (creditos.length === 0) return '💳 Sin créditos activos para calcular ahorro.'
 
     const { calcularResumenAhorro } = await import('./savings-calculator')
     const resumen = calcularResumenAhorro(
-      creditos.map(c => ({ nombre: c.nombre, pagoMensual: Number(c.pagoMensual), diaPago: c.diaPago })),
-      config.fechaBaseProximoPago,
+      creditos.map(c => ({
+        nombre: c.nombre,
+        pagoMensual: Number(c.pagoMensual),
+        frecuencia: c.frecuencia as 'SEMANAL' | 'QUINCENAL' | 'MENSUAL',
+        diaPago: c.diaPago ?? undefined,
+        diaSemana: c.diaSemana ?? undefined,
+        fechaBase: c.fechaBase ?? undefined,
+      })),
+      fuentes.map(f => ({
+        nombre: f.nombre,
+        monto: Number(f.monto),
+        frecuencia: f.frecuencia as 'SEMANAL' | 'QUINCENAL' | 'MENSUAL',
+        diaMes: f.diaMes ?? undefined,
+        diaSemana: f.diaSemana ?? undefined,
+        fechaBase: f.fechaBase,
+      })),
       new Date(),
-      Number(config.monto)
+      2
     )
 
-    const desglose = resumen.desglose
-      .filter(d => d.porPago[0] > 0)
-      .map(d => `• ${d.nombre}: $${d.porPago[0].toFixed(2)}`)
-      .join('\n')
+    if (resumen.cobros.length === 0) return '💰 Sin cobros proyectados próximamente.'
 
-    const fechaStr = resumen.proximaFechaPago.toLocaleDateString('es-MX', {
+    const primero = resumen.cobros[0]
+    const fechaStr = primero.fecha.toLocaleDateString('es-MX', {
       weekday: 'long', day: 'numeric', month: 'long'
     })
+    const desglose = primero.desglose
+      .map(d => `• ${d.creditoNombre}: $${d.monto.toFixed(2)}`)
+      .join('\n')
 
     return `💰 *Recomendación de ahorro*\n` +
-      `Próximo pago: *${fechaStr}* (en ${resumen.diasParaProximoPago} días)\n\n` +
+      `Próximo cobro (${primero.fuenteNombre}): *${fechaStr}*\n` +
+      `Ingreso: $${primero.montoIngreso.toFixed(2)} MXN\n\n` +
       `${desglose || '(sin créditos próximos)'}\n\n` +
-      `*Apartar: $${resumen.totalProximoPago.toFixed(2)}*\n` +
-      `Disponible: $${resumen.salarioDisponible.toFixed(2)}`
+      `*Apartar: $${primero.totalApartar.toFixed(2)}*\n` +
+      `Disponible: $${primero.disponible.toFixed(2)}`
   }
 
   if (comando === '/start' || comando === '/ayuda' || comando === '/help') {

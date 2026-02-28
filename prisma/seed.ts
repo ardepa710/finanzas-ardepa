@@ -8,17 +8,23 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  await prisma.configuracionSalario.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      id: 1,
-      monto: 22000,
-      // Next Monday that is a payday - March 2, 2026
-      fechaBaseProximoPago: new Date('2026-03-02T12:00:00.000Z'),
-    },
-  })
-  console.log('✅ Seed completado: salario $22,000 MXN configurado')
+  // Seed default salary income source if none exists
+  const existing = await prisma.fuenteIngreso.count()
+  if (existing === 0) {
+    await prisma.fuenteIngreso.create({
+      data: {
+        nombre: 'Salario',
+        monto: 22000,
+        frecuencia: 'QUINCENAL',
+        diaMes: 2,
+        fechaBase: new Date('2026-03-02T12:00:00.000Z'),
+        activo: true,
+      },
+    })
+    console.log('Seed completado: fuente de ingreso Salario $22,000 MXN configurada')
+  } else {
+    console.log('Seed omitido: ya existen fuentes de ingreso')
+  }
 }
 
 main()
