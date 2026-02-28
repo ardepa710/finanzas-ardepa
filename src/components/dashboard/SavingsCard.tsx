@@ -31,8 +31,10 @@ export default function SavingsCard({ resumen }: Props) {
               <p className="text-emerald-400 font-semibold">${cobro.montoIngreso.toLocaleString('es-MX')}</p>
             </div>
 
+            {/* Créditos */}
             {cobro.desglose.length > 0 && (
-              <div className="space-y-1 mb-2">
+              <div className="space-y-1 mb-1">
+                <p className="text-xs text-slate-600 uppercase tracking-wider mb-0.5">Créditos</p>
                 {cobro.desglose.map((d, i) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-slate-500">Apartar para {d.creditoNombre}</span>
@@ -42,7 +44,21 @@ export default function SavingsCard({ resumen }: Props) {
               </div>
             )}
 
-            <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-700/30">
+            {/* Gastos fijos */}
+            {cobro.desgloseGastosFijos.length > 0 && (
+              <div className="space-y-1 mb-1">
+                <p className="text-xs text-slate-600 uppercase tracking-wider mb-0.5">Gastos fijos</p>
+                {cobro.desgloseGastosFijos.map((d, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-slate-500">{d.creditoNombre}</span>
+                    <span className="text-red-400">−${d.monto.toLocaleString('es-MX')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Disponible */}
+            <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-700/30 mt-2">
               <span className="text-slate-400">Disponible</span>
               <span className={cobro.disponible >= 0 ? 'text-emerald-400' : 'text-red-400'}>
                 ${cobro.disponible.toLocaleString('es-MX')}
