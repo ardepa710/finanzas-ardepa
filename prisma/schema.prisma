@@ -88,3 +88,19 @@ model IngresoManual {
   @@index([fuenteId])
   @@index([fecha])
 }
+
+model GastoFijo {
+  id          String         @id @default(cuid())
+  nombre      String
+  monto       Decimal        @db.Decimal(10, 2)
+  categoria   CategoriaGasto
+  frecuencia  FrecuenciaPago
+  diaSemana   Int?
+  diaMes      Int?
+  fechaBase   DateTime
+  activo      Boolean        @default(true)
+  lastApplied DateTime?
+  createdAt   DateTime       @default(now())
+
+  @@index([activo])
+}
