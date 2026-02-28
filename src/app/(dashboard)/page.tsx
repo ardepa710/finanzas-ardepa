@@ -1,7 +1,7 @@
 import SavingsCard from '@/components/dashboard/SavingsCard'
 import ExpensesPieChart from '@/components/dashboard/ExpensesPieChart'
 import { prisma } from '@/lib/prisma'
-import { calcularResumenAhorro } from '@/lib/savings-calculator'
+import { calcularResumenAhorro, getLastOccurrence, type GastoFijoInput } from '@/lib/savings-calculator'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,10 +11,49 @@ const EMOJI: Record<string, string> = {
 }
 
 export default async function DashboardPage() {
-  const [creditos, fuentes] = await Promise.all([
+  const [creditos, fuentes, gastosFijosDB] = await Promise.all([
     prisma.credito.findMany({ where: { activo: true }, orderBy: { diaPago: 'asc' } }),
     prisma.fuenteIngreso.findMany({ where: { activo: true } }),
+    prisma.gastoFijo.findMany({ where: { activo: true } }),
   ])
+
+  const hoy = new Date()
+
+  // ── Auto-apply gastos fijos ──────────────────────────────────
+  for (const gf of gastosFijosDB) {
+    const ocurrencia = getLastOccurrence(
+      {
+        nombre: gf.nombre,
+        monto: Number(gf.monto),
+        categoria: gf.categoria as string,
+        frecuencia: gf.frecuencia as any,
+        diaMes: gf.diaMes ?? undefined,
+        fechaBase: gf.fechaBase,
+      },
+      hoy
+    )
+
+    if (!ocurrencia) continue
+    if (gf.lastApplied && gf.lastApplied >= ocurrencia) continue
+
+    // Create Gasto entry and update lastApplied
+    await Promise.all([
+      prisma.gasto.create({
+        data: {
+          descripcion: gf.nombre,
+          monto: gf.monto,
+          categoria: gf.categoria,
+          fecha: ocurrencia,
+          fuente: 'WEB',
+        },
+      }),
+      prisma.gastoFijo.update({
+        where: { id: gf.id },
+        data: { lastApplied: ocurrencia },
+      }),
+    ])
+  }
+  // ────────────────────────────────────────────────────────────
 
   const inicioMes = new Date()
   inicioMes.setDate(1)
@@ -35,6 +74,15 @@ export default async function DashboardPage() {
     return acc
   }, {} as Record<string, number>)
 
+  const gastosFijosInput: GastoFijoInput[] = gastosFijosDB.map(gf => ({
+    nombre: gf.nombre,
+    monto: Number(gf.monto),
+    categoria: gf.categoria as string,
+    frecuencia: gf.frecuencia as any,
+    diaMes: gf.diaMes ?? undefined,
+    fechaBase: gf.fechaBase,
+  }))
+
   const resumenAhorro = fuentes.length > 0
     ? calcularResumenAhorro(
         creditos.map(c => ({
@@ -53,7 +101,9 @@ export default async function DashboardPage() {
           diaSemana: f.diaSemana ?? undefined,
           fechaBase: f.fechaBase,
         })),
-        new Date()
+        hoy,
+        3,
+        gastosFijosInput
       )
     : null
 
