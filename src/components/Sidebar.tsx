@@ -9,6 +9,7 @@ const links = [
   { href: '/gastos', label: '💸 Gastos' },
   { href: '/gastos-fijos', label: '🔒 Gastos fijos' },
   { href: '/creditos', label: '💳 Créditos' },
+  { href: '/deuda', label: '💳 Planificación Deuda' },
   { href: '/presupuestos', label: '💰 Presupuestos' },
   { href: '/reportes', label: '📊 Reportes' },
 ]

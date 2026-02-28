@@ -278,16 +278,32 @@ model Credito {
 }
 ```
 
+## Snowball vs Avalanche
+
+### Quick Comparison
+
+| Aspect | Snowball | Avalanche |
+|--------|----------|-----------|
+| **Ordering** | Smallest balance first | Highest interest rate first |
+| **Optimization** | Maximizes quick wins | Minimizes total interest |
+| **Psychology** | Motivational/emotional | Logical/mathematical |
+| **Total Interest** | Higher | Lower (optimal) |
+| **Best For** | Motivation-focused | Rate-focused savers |
+
+**Example:**
+- Credit Card: $1000 @ 8% APR
+- Personal Loan: $5000 @ 18% APR
+
+**Snowball:** Pays Credit Card first (smaller balance)
+**Avalanche:** Pays Personal Loan first (higher rate) - saves $93 in interest
+
+See [Avalanche Strategy](./deuda-avalanche-strategy.md) for details.
+
 ## Future Enhancements
 
 ### Planned Features
 
-1. **Avalanche Strategy**
-   - Pay highest interest rate first
-   - Mathematically optimal
-   - Compare side-by-side with Snowball
-
-2. **Hybrid Strategy**
+1. **Hybrid Strategy**
    - Combine Snowball and Avalanche
    - Balance psychology and math
    - Customizable weighting
@@ -309,7 +325,7 @@ model Credito {
 
 ## Related Documentation
 
-- [Avalanche Strategy](./deuda-avalanche-strategy.md) (Future)
+- [Avalanche Strategy](./deuda-avalanche-strategy.md)
 - [Debt Comparison Tool](./deuda-comparison.md) (Future)
 - [API Reference](../api/deuda.md) (Future)
 

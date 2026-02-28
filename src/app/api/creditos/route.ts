@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const activoParam = searchParams.get('activo')
+
+  const where: any = {}
+
+  if (activoParam === 'true') {
+    where.activo = true
+  }
+
   const creditos = await prisma.credito.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
   })
-  return NextResponse.json(creditos)
+
+  return NextResponse.json({ ok: true, data: creditos })
 }
 
 export async function POST(req: NextRequest) {

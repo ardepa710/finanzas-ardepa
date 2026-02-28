@@ -28,8 +28,8 @@ export default function CreditosPage() {
   const cargar = async () => {
     setLoading(true)
     const res = await fetch('/api/creditos')
-    const data = await res.json()
-    setCreditos(data)
+    const json = await res.json()
+    setCreditos(json.data || json) // Support both new and old format
     setLoading(false)
   }
 

@@ -1,5 +1,5 @@
 /**
- * Integration tests for Snowball Strategy API
+ * Integration tests for Avalanche Strategy API
  * Tests the full API endpoint including database queries and calculation
  */
 
@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 
 const baseURL = 'http://localhost:3000'
 
-describe('Snowball Strategy API', () => {
+describe('Avalanche Strategy API', () => {
   let creditoIds: string[] = []
 
   beforeAll(async () => {
@@ -30,17 +30,17 @@ describe('Snowball Strategy API', () => {
     await prisma.$disconnect()
   })
 
-  describe('GET /api/deuda/snowball', () => {
-    it('calculates snowball strategy for active debts', async () => {
-      // Create test debts
+  describe('GET /api/deuda/avalanche', () => {
+    it('calculates avalanche strategy for active debts (highest rate first)', async () => {
+      // Create test debts - low rate small balance, high rate large balance
       const credito1 = await prisma.credito.create({
         data: {
-          nombre: 'Small Debt',
-          tipo: 'TARJETA',
+          nombre: 'Low Rate',
+          tipo: 'PRESTAMO',
           montoTotal: 1000,
           saldoActual: 1000,
           pagoMensual: 50,
-          tasaInteres: 10,
+          tasaInteres: 8,
           diaPago: 15,
           activo: true,
         },
@@ -48,12 +48,12 @@ describe('Snowball Strategy API', () => {
 
       const credito2 = await prisma.credito.create({
         data: {
-          nombre: 'Large Debt',
-          tipo: 'PRESTAMO',
+          nombre: 'High Rate',
+          tipo: 'TARJETA',
           montoTotal: 5000,
           saldoActual: 5000,
           pagoMensual: 150,
-          tasaInteres: 12,
+          tasaInteres: 18,
           diaPago: 20,
           activo: true,
         },
@@ -62,7 +62,7 @@ describe('Snowball Strategy API', () => {
       creditoIds.push(credito1.id, credito2.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=200')
+        .get('/api/deuda/avalanche?pagoExtra=200')
         .expect(200)
 
       expect(response.body.ok).toBe(true)
@@ -71,7 +71,8 @@ describe('Snowball Strategy API', () => {
       const { data } = response.body
 
       // Verify result structure
-      expect(data.orden).toEqual(['Small Debt', 'Large Debt'])
+      // Avalanche targets high rate first (18%) even though it's larger
+      expect(data.orden).toEqual(['High Rate', 'Low Rate'])
       expect(Array.isArray(data.timeline)).toBe(true)
       expect(data.timeline.length).toBeGreaterThan(0)
       expect(data.totalPagado).toBeGreaterThan(6000) // Principal + interest
@@ -101,7 +102,7 @@ describe('Snowball Strategy API', () => {
       creditoIds.push(credito.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball') // No pagoExtra param
+        .get('/api/deuda/avalanche') // No pagoExtra param
         .expect(200)
 
       expect(response.body.ok).toBe(true)
@@ -109,8 +110,8 @@ describe('Snowball Strategy API', () => {
       expect(response.body.data.metadata.pagoMensualTotal).toBe(100)
     })
 
-    it('handles zero interest rate debts', async () => {
-      const credito = await prisma.credito.create({
+    it('handles zero interest rate debts (pays them last)', async () => {
+      const zeroInterest = await prisma.credito.create({
         data: {
           nombre: 'Zero Interest',
           tipo: 'PRESTAMO',
@@ -123,15 +124,66 @@ describe('Snowball Strategy API', () => {
         },
       })
 
-      creditoIds.push(credito.id)
+      const normalInterest = await prisma.credito.create({
+        data: {
+          nombre: 'Normal Interest',
+          tipo: 'TARJETA',
+          montoTotal: 1000,
+          saldoActual: 1000,
+          pagoMensual: 100,
+          tasaInteres: 15,
+          diaPago: 15,
+          activo: true,
+        },
+      })
+
+      creditoIds.push(zeroInterest.id, normalInterest.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=0')
+        .get('/api/deuda/avalanche?pagoExtra=100')
         .expect(200)
 
       expect(response.body.ok).toBe(true)
-      expect(response.body.data.totalIntereses).toBe(0)
-      expect(response.body.data.mesesLibertad).toBe(10) // 1000 / 100
+      // Should pay high rate first, zero rate last
+      expect(response.body.data.orden).toEqual(['Normal Interest', 'Zero Interest'])
+    })
+
+    it('handles null interest rate (treats as 0%, pays last)', async () => {
+      const nullInterest = await prisma.credito.create({
+        data: {
+          nombre: 'Null Interest',
+          tipo: 'PRESTAMO',
+          montoTotal: 1000,
+          saldoActual: 1000,
+          pagoMensual: 100,
+          tasaInteres: null,
+          diaPago: 1,
+          activo: true,
+        },
+      })
+
+      const normalInterest = await prisma.credito.create({
+        data: {
+          nombre: 'Normal Interest',
+          tipo: 'TARJETA',
+          montoTotal: 1000,
+          saldoActual: 1000,
+          pagoMensual: 100,
+          tasaInteres: 12,
+          diaPago: 15,
+          activo: true,
+        },
+      })
+
+      creditoIds.push(nullInterest.id, normalInterest.id)
+
+      const response = await request(baseURL)
+        .get('/api/deuda/avalanche?pagoExtra=50')
+        .expect(200)
+
+      expect(response.body.ok).toBe(true)
+      // Should pay normal rate first, null last
+      expect(response.body.data.orden).toEqual(['Normal Interest', 'Null Interest'])
     })
 
     it('only includes active debts with positive balance', async () => {
@@ -180,7 +232,7 @@ describe('Snowball Strategy API', () => {
       creditoIds.push(activeDebt.id, inactiveDebt.id, paidDebt.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=100')
+        .get('/api/deuda/avalanche?pagoExtra=100')
         .expect(200)
 
       expect(response.body.ok).toBe(true)
@@ -192,7 +244,7 @@ describe('Snowball Strategy API', () => {
   describe('Validation', () => {
     it('returns error when no active debts', async () => {
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=100')
+        .get('/api/deuda/avalanche?pagoExtra=100')
         .expect(400)
 
       expect(response.body.ok).toBe(false)
@@ -216,7 +268,7 @@ describe('Snowball Strategy API', () => {
       creditoIds.push(credito.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=-50')
+        .get('/api/deuda/avalanche?pagoExtra=-50')
         .expect(400)
 
       expect(response.body.ok).toBe(false)
@@ -240,7 +292,7 @@ describe('Snowball Strategy API', () => {
       creditoIds.push(credito.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=invalid')
+        .get('/api/deuda/avalanche?pagoExtra=invalid')
         .expect(400)
 
       expect(response.body.ok).toBe(false)
@@ -249,7 +301,7 @@ describe('Snowball Strategy API', () => {
   })
 
   describe('Real-world scenarios', () => {
-    it('calculates realistic debt payoff timeline', async () => {
+    it('calculates realistic debt payoff timeline (highest rate first)', async () => {
       // Create realistic debt portfolio
       const creditCard = await prisma.credito.create({
         data: {
@@ -258,7 +310,7 @@ describe('Snowball Strategy API', () => {
           montoTotal: 3000,
           saldoActual: 2500,
           pagoMensual: 75,
-          tasaInteres: 18,
+          tasaInteres: 24, // HIGHEST rate - target first
           diaPago: 5,
           activo: true,
         },
@@ -284,7 +336,7 @@ describe('Snowball Strategy API', () => {
           montoTotal: 15000,
           saldoActual: 12000,
           pagoMensual: 350,
-          tasaInteres: 6,
+          tasaInteres: 6, // LOWEST rate - target last
           diaPago: 20,
           activo: true,
         },
@@ -293,17 +345,17 @@ describe('Snowball Strategy API', () => {
       creditoIds.push(creditCard.id, personalLoan.id, carLoan.id)
 
       const response = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=400')
+        .get('/api/deuda/avalanche?pagoExtra=400')
         .expect(200)
 
       expect(response.body.ok).toBe(true)
 
       const { data } = response.body
 
-      // Verify snowball order (smallest to largest)
-      expect(data.orden[0]).toBe('Credit Card')
-      expect(data.orden[1]).toBe('Personal Loan')
-      expect(data.orden[2]).toBe('Car Loan')
+      // Verify avalanche order (highest rate to lowest)
+      expect(data.orden[0]).toBe('Credit Card') // 24%
+      expect(data.orden[1]).toBe('Personal Loan') // 12%
+      expect(data.orden[2]).toBe('Car Loan') // 6%
 
       // Verify reasonable payoff timeline
       expect(data.mesesLibertad).toBeGreaterThan(12)
@@ -336,12 +388,12 @@ describe('Snowball Strategy API', () => {
 
       // Calculate with small extra
       const response1 = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=50')
+        .get('/api/deuda/avalanche?pagoExtra=50')
         .expect(200)
 
       // Calculate with large extra
       const response2 = await request(baseURL)
-        .get('/api/deuda/snowball?pagoExtra=300')
+        .get('/api/deuda/avalanche?pagoExtra=300')
         .expect(200)
 
       // Larger extra payment should result in:
@@ -353,6 +405,63 @@ describe('Snowball Strategy API', () => {
       expect(response2.body.data.totalIntereses).toBeLessThan(
         response1.body.data.totalIntereses
       )
+    })
+
+    it('demonstrates avalanche saves more interest than snowball', async () => {
+      // Scenario where avalanche clearly wins:
+      // - Small debt with low rate
+      // - Large debt with high rate
+      const smallLowRate = await prisma.credito.create({
+        data: {
+          nombre: 'Small Low Rate',
+          tipo: 'PRESTAMO',
+          montoTotal: 1000,
+          saldoActual: 1000,
+          pagoMensual: 50,
+          tasaInteres: 5,
+          diaPago: 15,
+          activo: true,
+        },
+      })
+
+      const largeHighRate = await prisma.credito.create({
+        data: {
+          nombre: 'Large High Rate',
+          tipo: 'TARJETA',
+          montoTotal: 5000,
+          saldoActual: 5000,
+          pagoMensual: 150,
+          tasaInteres: 20,
+          diaPago: 20,
+          activo: true,
+        },
+      })
+
+      creditoIds.push(smallLowRate.id, largeHighRate.id)
+
+      // Get avalanche result
+      const avalancheResponse = await request(baseURL)
+        .get('/api/deuda/avalanche?pagoExtra=200')
+        .expect(200)
+
+      // Get snowball result for comparison
+      const snowballResponse = await request(baseURL)
+        .get('/api/deuda/snowball?pagoExtra=200')
+        .expect(200)
+
+      const avalanche = avalancheResponse.body.data
+      const snowball = snowballResponse.body.data
+
+      // Verify different ordering
+      expect(avalanche.orden[0]).toBe('Large High Rate') // Highest rate first
+      expect(snowball.orden[0]).toBe('Small Low Rate') // Smallest balance first
+
+      // Avalanche should save more on interest
+      expect(avalanche.totalIntereses).toBeLessThan(snowball.totalIntereses)
+
+      // Both should pay off all debt
+      expect(avalanche.mesesLibertad).toBeGreaterThan(0)
+      expect(snowball.mesesLibertad).toBeGreaterThan(0)
     })
   })
 })

@@ -5,4 +5,5 @@
  */
 
 export { calculateSnowball } from './calculators/snowball'
+export { calculateAvalanche } from './calculators/avalanche'
 export type { MonthlyPayment, StrategyResult } from './types'
