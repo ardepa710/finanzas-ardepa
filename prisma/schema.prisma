@@ -28,6 +28,12 @@ enum FuenteGasto {
   WEB
 }
 
+enum PeriodoPresupuesto {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
 model Categoria {
   id          String        @id @default(cuid())
   nombre      String
@@ -41,8 +47,9 @@ model Categoria {
   parent      Categoria?    @relation("SubCategorias", fields: [parentId], references: [id])
   hijos       Categoria[]   @relation("SubCategorias")
 
-  gastos      Gasto[]
-  gastosFijos GastoFijo[]
+  gastos       Gasto[]
+  gastosFijos  GastoFijo[]
+  presupuestos Presupuesto[]
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -127,4 +134,24 @@ model GastoFijo {
 
   @@index([activo])
   @@index([categoriaId])
+}
+
+model Presupuesto {
+  id           String              @id @default(cuid())
+  categoriaId  String
+  categoria    Categoria           @relation(fields: [categoriaId], references: [id])
+
+  monto        Decimal             @db.Decimal(10, 2)
+  periodo      PeriodoPresupuesto
+
+  alertaEn80   Boolean             @default(true)
+  alertaEn90   Boolean             @default(true)
+  alertaEn100  Boolean             @default(true)
+
+  activo       Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([categoriaId, periodo])
+  @@index([activo])
 }
