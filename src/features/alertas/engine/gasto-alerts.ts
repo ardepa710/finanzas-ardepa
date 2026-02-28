@@ -51,7 +51,21 @@ export async function checkGastoInusualAlerts(): Promise<AlertToCreate[]> {
   })
 
   const totalPasado = Number(gastosPasados._sum.monto || 0)
-  const promedioDiario = totalPasado / 30
+
+  // Count actual days with spending data to avoid inflated averages for new users
+  const diasConDatos = await prisma.gasto.groupBy({
+    by: ['fecha'],
+    where: {
+      fecha: {
+        gte: thirtyDaysAgo,
+        lt: startOfToday,
+      },
+    },
+  })
+
+  // Use actual days with data (or 30 if more data exists, or 1 minimum to avoid division by zero)
+  const diasReales = Math.max(diasConDatos.length, 1)
+  const promedioDiario = totalPasado / diasReales
 
   // If no historical data, can't compare
   if (promedioDiario === 0) {

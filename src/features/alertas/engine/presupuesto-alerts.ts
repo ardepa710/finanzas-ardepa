@@ -56,6 +56,10 @@ export async function checkPresupuestoAlerts(): Promise<AlertToCreate[]> {
     for (const presupuesto of presupuestos) {
       const gastado = gastadoPorCategoria.get(presupuesto.categoriaId) || 0
       const limite = Number(presupuesto.monto)
+
+      // Skip zero-amount budgets (invalid configuration)
+      if (limite === 0) continue
+
       const porcentaje = limite > 0 ? (gastado / limite) * 100 : 0
 
       // Check 100% threshold

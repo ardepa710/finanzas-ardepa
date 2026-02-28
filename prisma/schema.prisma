@@ -75,6 +75,8 @@ model Credito {
   fechaBase   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  @@index([activo])
 }
 
 model Gasto {
