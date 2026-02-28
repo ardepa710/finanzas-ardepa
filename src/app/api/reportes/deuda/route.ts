@@ -43,7 +43,7 @@ export const GET = withErrorHandling(async (req: Request) => {
 
   // Add disclaimer about limitations
   return {
-    data: report,
+    report,
     warnings: [
       'Este reporte muestra el estado actual de deudas, no su evolución histórica dentro del período seleccionado.',
       'Los valores de deuda inicial y pagos totales son aproximaciones basadas en el saldo actual.',
