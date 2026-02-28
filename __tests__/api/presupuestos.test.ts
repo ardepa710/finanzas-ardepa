@@ -11,6 +11,17 @@ describe('Presupuestos API', () => {
     categoriaId = categoria!.id
   })
 
+  afterEach(async () => {
+    // Clean up test data after each test to prevent pollution
+    await prisma.presupuesto.deleteMany({})
+  })
+
+  afterAll(async () => {
+    // Final cleanup and disconnect
+    await prisma.presupuesto.deleteMany({})
+    await prisma.$disconnect()
+  })
+
   it('POST /api/presupuestos creates budget', async () => {
     const response = await request(baseURL)
       .post('/api/presupuestos')

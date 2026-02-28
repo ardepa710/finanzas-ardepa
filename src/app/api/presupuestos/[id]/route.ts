@@ -23,21 +23,44 @@ export const PATCH = withErrorHandling(async (req: Request, { params }: { params
     throw new APIError(ErrorCodes.VALIDATION_ERROR, result.error.issues[0].message)
   }
 
-  const presupuesto = await prisma.presupuesto.update({
-    where: { id: params.id },
-    data: result.data,
-    include: { categoria: true },
-  })
+  try {
+    const presupuesto = await prisma.presupuesto.update({
+      where: { id: params.id },
+      data: result.data,
+      include: { categoria: true },
+    })
 
-  return presupuesto
+    return presupuesto
+  } catch (error: any) {
+    // Handle unique constraint violation (P2002)
+    if (error.code === 'P2002') {
+      throw new APIError(
+        ErrorCodes.VALIDATION_ERROR,
+        'Ya existe un presupuesto para esta categoría en este periodo'
+      )
+    }
+    // Handle record not found (P2025)
+    if (error.code === 'P2025') {
+      throw new APIError(ErrorCodes.NOT_FOUND, 'Presupuesto no encontrado', 404)
+    }
+    throw error
+  }
 })
 
 export const DELETE = withErrorHandling(async (req: Request, { params }: { params: { id: string } }) => {
-  const presupuesto = await prisma.presupuesto.update({
-    where: { id: params.id },
-    data: { activo: false },
-    include: { categoria: true },
-  })
+  try {
+    const presupuesto = await prisma.presupuesto.update({
+      where: { id: params.id },
+      data: { activo: false },
+      include: { categoria: true },
+    })
 
-  return presupuesto
+    return presupuesto
+  } catch (error: any) {
+    // Handle record not found (P2025)
+    if (error.code === 'P2025') {
+      throw new APIError(ErrorCodes.NOT_FOUND, 'Presupuesto no encontrado', 404)
+    }
+    throw error
+  }
 })

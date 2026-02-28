@@ -20,10 +20,21 @@ export const POST = withErrorHandling(async (req: Request) => {
     throw new APIError(ErrorCodes.VALIDATION_ERROR, result.error.issues[0].message)
   }
 
-  const presupuesto = await prisma.presupuesto.create({
-    data: result.data,
-    include: { categoria: true },
-  })
+  try {
+    const presupuesto = await prisma.presupuesto.create({
+      data: result.data,
+      include: { categoria: true },
+    })
 
-  return presupuesto
+    return presupuesto
+  } catch (error: any) {
+    // Handle unique constraint violation (P2002)
+    if (error.code === 'P2002') {
+      throw new APIError(
+        ErrorCodes.VALIDATION_ERROR,
+        'Ya existe un presupuesto para esta categoría en este periodo'
+      )
+    }
+    throw error
+  }
 })

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { withErrorHandling } from '@/lib/api-error'
+import { withErrorHandling, APIError, ErrorCodes } from '@/lib/api-error'
 
 function getStartOfPeriod(periodo: string): Date {
   const now = new Date()
@@ -29,6 +29,15 @@ export const GET = withErrorHandling(async (req: Request) => {
   const { searchParams } = new URL(req.url)
   const periodo = searchParams.get('periodo') || 'MENSUAL'
 
+  // Validate periodo parameter
+  const validPeriodos = ['SEMANAL', 'QUINCENAL', 'MENSUAL']
+  if (!validPeriodos.includes(periodo)) {
+    throw new APIError(
+      ErrorCodes.VALIDATION_ERROR,
+      `Periodo inválido. Debe ser uno de: ${validPeriodos.join(', ')}`
+    )
+  }
+
   const presupuestos = await prisma.presupuesto.findMany({
     where: { activo: true, periodo: periodo as any },
     include: { categoria: true },
@@ -38,29 +47,37 @@ export const GET = withErrorHandling(async (req: Request) => {
   const inicio = getStartOfPeriod(periodo)
   const fin = new Date()
 
-  const statuses = await Promise.all(
-    presupuestos.map(async (p) => {
-      const gastado = await prisma.gasto.aggregate({
-        where: {
-          categoriaId: p.categoriaId,
-          fecha: { gte: inicio, lte: fin },
-        },
-        _sum: { monto: true },
-      })
+  // Fix N+1 query: Group gastos by categoriaId in a single query
+  const gastosAgrupados = await prisma.gasto.groupBy({
+    by: ['categoriaId'],
+    where: {
+      fecha: { gte: inicio, lte: fin },
+      categoriaId: { in: presupuestos.map(p => p.categoriaId) },
+    },
+    _sum: { monto: true },
+  })
 
-      const monto = Number(gastado._sum.monto || 0)
-      const limite = Number(p.monto)
-      const porcentaje = (monto / limite) * 100
-
-      return {
-        presupuesto: p,
-        gastado: monto,
-        restante: Math.max(0, limite - monto),
-        porcentaje,
-        estado: porcentaje >= 100 ? 'EXCEDIDO' : porcentaje >= 90 ? 'ALERTA' : 'OK',
-      }
-    })
+  // Create a map for O(1) lookups
+  const gastadoPorCategoria = new Map(
+    gastosAgrupados.map(g => [g.categoriaId, Number(g._sum.monto || 0)])
   )
+
+  // Calculate statuses
+  const statuses = presupuestos.map((p) => {
+    const monto = gastadoPorCategoria.get(p.categoriaId) || 0
+    const limite = Number(p.monto)
+
+    // Fix division by zero
+    const porcentaje = limite > 0 ? (monto / limite) * 100 : 0
+
+    return {
+      presupuesto: p,
+      gastado: monto,
+      restante: Math.max(0, limite - monto),
+      porcentaje,
+      estado: porcentaje >= 100 ? 'EXCEDIDO' : porcentaje >= 90 ? 'ALERTA' : 'OK',
+    }
+  })
 
   return statuses
 })
