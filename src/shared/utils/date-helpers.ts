@@ -120,3 +120,31 @@ export function calculateNextPaymentDate(credito: {
   tomorrow.setDate(tomorrow.getDate() + 1)
   return tomorrow
 }
+
+/**
+ * Get the number of days in a date range
+ * @param range Date range
+ * @returns Number of days (inclusive)
+ */
+export function getIntervalDays(range: { inicio: Date; fin: Date }): number {
+  return Math.ceil((range.fin.getTime() - range.inicio.getTime()) / (1000 * 60 * 60 * 24)) + 1
+}
+
+/**
+ * Format a date range for display
+ * @param range Date range
+ * @returns Formatted string
+ */
+export function formatDateRange(range: { inicio: Date; fin: Date }): string {
+  const inicio = range.inicio.toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+  const fin = range.fin.toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+  return `${inicio} - ${fin}`
+}
