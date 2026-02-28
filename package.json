@@ -28,7 +28,6 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
-    "tsx": "^4.21.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
@@ -45,6 +44,7 @@
     "supertest": "^7.2.2",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
   }
