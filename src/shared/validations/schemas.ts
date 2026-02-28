@@ -55,3 +55,8 @@ export const valoracionSchema = z.object({
   fecha: z.coerce.date(),
   notas: z.string().max(500).optional(),
 })
+
+export const proyeccionLargoPlazoQuerySchema = z.object({
+  años: z.coerce.number().int().min(1).max(5).default(5),
+  balanceInicial: z.coerce.number().default(0),
+})
