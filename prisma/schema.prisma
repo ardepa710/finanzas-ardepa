@@ -225,6 +225,7 @@ model Activo {
   updatedAt         DateTime    @updatedAt
 
   historico         ValoracionActivo[]
+  inversiones       Inversion[]
 
   @@index([activo])
   @@index([tipo])
@@ -240,4 +241,60 @@ model ValoracionActivo {
   createdAt DateTime @default(now())
 
   @@index([activoId, fecha])
+}
+
+enum TipoTransaccion {
+  COMPRA
+  VENTA
+  DIVIDENDO
+  INTERES
+  RETIRO
+  APORTE
+}
+
+model Inversion {
+  id                String                 @id @default(cuid())
+  activoId          String
+  activo            Activo                 @relation(fields: [activoId], references: [id])
+
+  // Investment details
+  montoInvertido    Decimal                @db.Decimal(12, 2)
+  fechaInversion    DateTime
+
+  // Performance tracking
+  valorActual       Decimal                @db.Decimal(12, 2)
+  rendimientoTotal  Decimal                @db.Decimal(12, 2)  // valorActual - montoInvertido
+  rendimientoPct    Decimal                @db.Decimal(5, 2)   // (rendimientoTotal / montoInvertido) * 100
+
+  // Returns
+  dividendos        Decimal                @default(0) @db.Decimal(12, 2)
+  intereses         Decimal                @default(0) @db.Decimal(12, 2)
+
+  // Metadata
+  descripcion       String?                @db.Text
+  activa            Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  transacciones     TransaccionInversion[]
+
+  @@index([activoId])
+  @@index([activa])
+}
+
+model TransaccionInversion {
+  id              String           @id @default(cuid())
+  inversionId     String
+  inversion       Inversion        @relation(fields: [inversionId], references: [id], onDelete: Cascade)
+
+  tipo            TipoTransaccion
+  monto           Decimal          @db.Decimal(12, 2)
+  fecha           DateTime
+  descripcion     String?          @db.Text
+
+  createdAt       DateTime         @default(now())
+
+  @@index([inversionId])
+  @@index([tipo])
+  @@index([fecha])
 }

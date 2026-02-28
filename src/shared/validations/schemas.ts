@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TipoNotificacion, Prioridad, TipoActivo, Liquidez } from '@/generated/prisma/client'
+import { TipoNotificacion, Prioridad, TipoActivo, Liquidez, TipoTransaccion } from '@/generated/prisma/client'
 
 export const gastoSchema = z.object({
   descripcion: z.string().min(1).max(200),
@@ -59,4 +59,29 @@ export const valoracionSchema = z.object({
 export const proyeccionLargoPlazoQuerySchema = z.object({
   años: z.coerce.number().int().min(1).max(5).default(5),
   balanceInicial: z.coerce.number().default(0),
+})
+
+export const inversionSchema = z.object({
+  activoId: z.string().cuid(),
+  montoInvertido: z.number().positive(),
+  fechaInversion: z.string().datetime().or(z.coerce.date()),
+  valorActual: z.number().positive(),
+  dividendos: z.number().nonnegative().optional(),
+  intereses: z.number().nonnegative().optional(),
+  descripcion: z.string().optional(),
+})
+
+export const updateInversionSchema = z.object({
+  valorActual: z.number().positive().optional(),
+  dividendos: z.number().nonnegative().optional(),
+  intereses: z.number().nonnegative().optional(),
+  descripcion: z.string().optional(),
+  activa: z.boolean().optional(),
+})
+
+export const transaccionInversionSchema = z.object({
+  tipo: z.nativeEnum(TipoTransaccion),
+  monto: z.number().positive(),
+  fecha: z.string().datetime().or(z.coerce.date()),
+  descripcion: z.string().optional(),
 })
