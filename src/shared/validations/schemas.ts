@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TipoNotificacion, Prioridad, TipoActivo, Liquidez, TipoTransaccion } from '@/generated/prisma/client'
+import { TipoNotificacion, Prioridad, TipoActivo, Liquidez, TipoTransaccion, CategoriaMeta, EstadoMeta, PrioridadMeta } from '@/generated/prisma/client'
 
 export const gastoSchema = z.object({
   descripcion: z.string().min(1).max(200),
@@ -84,4 +84,34 @@ export const transaccionInversionSchema = z.object({
   monto: z.number().positive(),
   fecha: z.string().datetime().or(z.coerce.date()),
   descripcion: z.string().optional(),
+})
+
+export const metaSchema = z.object({
+  nombre: z.string().min(3).max(100),
+  descripcion: z.string().optional(),
+  categoria: z.nativeEnum(CategoriaMeta),
+  montoObjetivo: z.number().positive(),
+  fechaObjetivo: z.string().datetime().or(z.coerce.date()).optional(),
+  prioridad: z.nativeEnum(PrioridadMeta).optional(),
+})
+
+export const updateMetaSchema = z.object({
+  nombre: z.string().min(3).max(100).optional(),
+  descripcion: z.string().optional(),
+  categoria: z.nativeEnum(CategoriaMeta).optional(),
+  montoObjetivo: z.number().positive().optional(),
+  montoActual: z.number().nonnegative().optional(),
+  fechaObjetivo: z.string().datetime().or(z.coerce.date()).nullable().optional(),
+  prioridad: z.nativeEnum(PrioridadMeta).optional(),
+  estado: z.nativeEnum(EstadoMeta).optional(),
+})
+
+export const contribucionSchema = z.object({
+  monto: z.number().positive(),
+  fecha: z.string().datetime().or(z.coerce.date()).optional(),
+  descripcion: z.string().optional(),
+})
+
+export const metaProyeccionQuerySchema = z.object({
+  ahorroMensual: z.coerce.number().positive(),
 })

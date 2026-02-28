@@ -298,3 +298,77 @@ model TransaccionInversion {
   @@index([tipo])
   @@index([fecha])
 }
+
+enum CategoriaMeta {
+  FONDO_EMERGENCIA
+  VACACIONES
+  ENGANCHE_CASA
+  ENGANCHE_AUTO
+  EDUCACION
+  RETIRO
+  DEUDA
+  COMPRA_GRANDE
+  OTRO
+}
+
+enum EstadoMeta {
+  EN_PROGRESO
+  COMPLETADA
+  CANCELADA
+  PAUSADA
+}
+
+enum PrioridadMeta {
+  ALTA
+  MEDIA
+  BAJA
+}
+
+model Meta {
+  id                String              @id @default(cuid())
+
+  // Goal details
+  nombre            String
+  descripcion       String?             @db.Text
+  categoria         CategoriaMeta
+
+  // Financial targets
+  montoObjetivo     Decimal             @db.Decimal(12, 2)
+  montoActual       Decimal             @default(0) @db.Decimal(12, 2)
+  porcentajeProgreso Decimal            @default(0) @db.Decimal(5, 2)  // Auto-calculated
+
+  // Timeline
+  fechaInicio       DateTime            @default(now())
+  fechaObjetivo     DateTime?
+  fechaCompletada   DateTime?
+
+  // Status
+  estado            EstadoMeta          @default(EN_PROGRESO)
+  prioridad         PrioridadMeta       @default(MEDIA)
+
+  // Metadata
+  activo            Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  contribuciones    Contribucion[]
+
+  @@index([estado])
+  @@index([activo])
+  @@index([categoria])
+}
+
+model Contribucion {
+  id          String      @id @default(cuid())
+  metaId      String
+  meta        Meta        @relation(fields: [metaId], references: [id], onDelete: Cascade)
+
+  monto       Decimal     @db.Decimal(12, 2)
+  fecha       DateTime    @default(now())
+  descripcion String?     @db.Text
+
+  createdAt   DateTime    @default(now())
+
+  @@index([metaId])
+  @@index([fecha])
+}
