@@ -1,6 +1,7 @@
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../src/generated/prisma/client'
+import { seedCategories } from './seed-categories'
 
 const connectionString = process.env.DATABASE_URL!
 const pool = new Pool({ connectionString })
@@ -8,6 +9,9 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
+  // Seed categories first (required for other seeds)
+  await seedCategories()
+
   // Seed default salary income source if none exists
   const existing = await prisma.fuenteIngreso.count()
   if (existing === 0) {

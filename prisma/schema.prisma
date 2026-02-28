@@ -18,18 +18,37 @@ enum FrecuenciaPago {
   MENSUAL
 }
 
-enum CategoriaGasto {
-  ALIMENTACION
-  TRANSPORTE
-  ENTRETENIMIENTO
-  SALUD
-  SERVICIOS
-  OTROS
+enum TipoCategoria {
+  GASTO
+  INGRESO
 }
 
 enum FuenteGasto {
   TELEGRAM
   WEB
+}
+
+model Categoria {
+  id          String        @id @default(cuid())
+  nombre      String
+  icono       String
+  color       String
+  tipo        TipoCategoria
+  activa      Boolean       @default(true)
+  orden       Int
+
+  parentId    String?
+  parent      Categoria?    @relation("SubCategorias", fields: [parentId], references: [id])
+  hijos       Categoria[]   @relation("SubCategorias")
+
+  gastos      Gasto[]
+  gastosFijos GastoFijo[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([nombre, tipo])
+  @@index([activa])
 }
 
 model Credito {
@@ -52,13 +71,16 @@ model Credito {
 }
 
 model Gasto {
-  id          String         @id @default(cuid())
+  id          String      @id @default(cuid())
   descripcion String
-  monto       Decimal        @db.Decimal(10, 2)
-  categoria   CategoriaGasto
-  fecha       DateTime       @default(now())
-  fuente      FuenteGasto    @default(WEB)
-  createdAt   DateTime       @default(now())
+  monto       Decimal     @db.Decimal(10, 2)
+  categoriaId String
+  categoria   Categoria   @relation(fields: [categoriaId], references: [id])
+  fecha       DateTime    @default(now())
+  fuente      FuenteGasto @default(WEB)
+  createdAt   DateTime    @default(now())
+
+  @@index([categoriaId, fecha])
 }
 
 model FuenteIngreso {
@@ -93,7 +115,8 @@ model GastoFijo {
   id          String         @id @default(cuid())
   nombre      String
   monto       Decimal        @db.Decimal(10, 2)
-  categoria   CategoriaGasto
+  categoriaId String
+  categoria   Categoria      @relation(fields: [categoriaId], references: [id])
   frecuencia  FrecuenciaPago
   diaSemana   Int?
   diaMes      Int?
@@ -103,4 +126,5 @@ model GastoFijo {
   createdAt   DateTime       @default(now())
 
   @@index([activo])
+  @@index([categoriaId])
 }
