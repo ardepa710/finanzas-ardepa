@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
 
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
 interface CreditoFormData {
   nombre: string
   tipo: 'PRESTAMO' | 'TARJETA'
@@ -12,6 +14,9 @@ interface CreditoFormData {
   diaPago: string
   tasaInteres: string
   activo: boolean
+  frecuencia: 'MENSUAL' | 'QUINCENAL' | 'SEMANAL'
+  diaSemana: string
+  fechaBase: string
 }
 
 interface Props {
@@ -22,7 +27,10 @@ interface Props {
 
 export default function CreditoForm({ initial, onSave, onCancel }: Props) {
   const [tipo, setTipo] = useState<'PRESTAMO' | 'TARJETA'>((initial?.tipo as any) ?? 'PRESTAMO')
-  const [form, setForm] = useState<Omit<CreditoFormData, 'tipo' | 'activo'>>({
+  const [frecuencia, setFrecuencia] = useState<'MENSUAL' | 'QUINCENAL' | 'SEMANAL'>(
+    (initial?.frecuencia as any) ?? 'MENSUAL'
+  )
+  const [form, setForm] = useState({
     nombre: initial?.nombre ?? '',
     montoTotal: initial?.montoTotal ?? '',
     saldoActual: initial?.saldoActual ?? '',
@@ -31,15 +39,19 @@ export default function CreditoForm({ initial, onSave, onCancel }: Props) {
     fechaCorte: initial?.fechaCorte ?? '',
     diaPago: initial?.diaPago ?? '',
     tasaInteres: initial?.tasaInteres ?? '',
+    diaSemana: initial?.diaSemana ?? '',
+    fechaBase: initial?.fechaBase ?? '',
   })
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({ ...form, tipo, activo: true })
+    onSave({ ...form, tipo, frecuencia, activo: true })
   }
+
+  const pagoLabel = frecuencia === 'MENSUAL' ? 'Pago mensual' : frecuencia === 'QUINCENAL' ? 'Pago quincenal' : 'Pago semanal'
 
   return (
     <form onSubmit={handleSubmit} className="card space-y-4">
@@ -65,13 +77,46 @@ export default function CreditoForm({ initial, onSave, onCancel }: Props) {
           <input required type="number" step="0.01" min="0" value={form.saldoActual} onChange={set('saldoActual')} className="input" placeholder="35000" />
         </div>
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Pago mensual</label>
+          <label className="text-xs text-slate-400 block mb-1">{pagoLabel}</label>
           <input required type="number" step="0.01" min="0" value={form.pagoMensual} onChange={set('pagoMensual')} className="input" placeholder="2500" />
         </div>
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Día límite de pago (1-31)</label>
-          <input required type="number" min="1" max="31" value={form.diaPago} onChange={set('diaPago')} className="input" placeholder="15" />
+          <label className="text-xs text-slate-400 block mb-1">Frecuencia de pago</label>
+          <select value={frecuencia} onChange={e => setFrecuencia(e.target.value as any)} className="input">
+            <option value="MENSUAL">Mensual</option>
+            <option value="QUINCENAL">Quincenal (cada 14 días)</option>
+            <option value="SEMANAL">Semanal</option>
+          </select>
         </div>
+
+        {frecuencia === 'MENSUAL' ? (
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Día límite de pago (1-31)</label>
+            <input required type="number" min="1" max="31" value={form.diaPago} onChange={set('diaPago')} className="input" placeholder="15" />
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Día de pago (semana)</label>
+              <select value={form.diaSemana} onChange={set('diaSemana')} className="input">
+                <option value="">Seleccionar...</option>
+                {DIAS_SEMANA.map((d, i) => (
+                  <option key={i} value={i}>{d}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Fecha del primer pago</label>
+              <input required type="date" value={form.fechaBase} onChange={set('fechaBase')} className="input" />
+            </div>
+          </>
+        )}
+
+        <div>
+          <label className="text-xs text-slate-400 block mb-1">Tasa de interés anual (%)</label>
+          <input type="number" step="0.01" min="0" value={form.tasaInteres} onChange={set('tasaInteres')} className="input" placeholder="24.5" />
+        </div>
+
         {tipo === 'TARJETA' && (
           <>
             <div>
@@ -84,10 +129,6 @@ export default function CreditoForm({ initial, onSave, onCancel }: Props) {
             </div>
           </>
         )}
-        <div>
-          <label className="text-xs text-slate-400 block mb-1">Tasa de interés anual (%)</label>
-          <input type="number" step="0.01" min="0" value={form.tasaInteres} onChange={set('tasaInteres')} className="input" placeholder="24.5" />
-        </div>
       </div>
       <div className="flex gap-3 justify-end pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">Cancelar</button>

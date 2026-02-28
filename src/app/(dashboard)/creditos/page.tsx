@@ -14,6 +14,9 @@ interface Credito {
   diaPago: number
   tasaInteres?: string | number | null
   activo: boolean
+  frecuencia?: string
+  diaSemana?: number | null
+  fechaBase?: string | null
 }
 
 export default function CreditosPage() {
@@ -100,6 +103,9 @@ export default function CreditosPage() {
             fechaCorte: editando.fechaCorte ? String(editando.fechaCorte) : '',
             diaPago: String(editando.diaPago),
             tasaInteres: editando.tasaInteres ? String(editando.tasaInteres) : '',
+            frecuencia: editando.frecuencia as any,
+            diaSemana: editando.diaSemana != null ? String(editando.diaSemana) : '',
+            fechaBase: editando.fechaBase ? new Date(editando.fechaBase).toISOString().split('T')[0] : '',
           }}
           onSave={guardar}
           onCancel={() => setEditando(null)}
