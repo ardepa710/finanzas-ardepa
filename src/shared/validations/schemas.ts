@@ -22,3 +22,11 @@ export const creditoSchema = z.object({
   diaPago: z.number().int().min(1).max(31),
   tasaInteres: z.number().min(0).max(100).optional(),
 })
+
+export const notificacionSchema = z.object({
+  tipo: z.enum(['PRESUPUESTO_80', 'PRESUPUESTO_90', 'PRESUPUESTO_100', 'CREDITO_PROXIMO', 'CREDITO_VENCIDO', 'AHORRO_BAJO', 'AHORRO_META', 'GASTO_INUSUAL', 'LOGRO_DESBLOQUEADO', 'INSIGHT_IA']),
+  titulo: z.string().min(1).max(200),
+  mensaje: z.string().min(1),
+  prioridad: z.enum(['BAJA', 'NORMAL', 'ALTA', 'URGENTE']).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+})

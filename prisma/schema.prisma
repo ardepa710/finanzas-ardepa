@@ -155,3 +155,41 @@ model Presupuesto {
   @@unique([categoriaId, periodo])
   @@index([activo])
 }
+
+model Notificacion {
+  id          String   @id @default(cuid())
+  tipo        TipoNotificacion
+  titulo      String
+  mensaje     String   @db.Text
+  prioridad   Prioridad @default(NORMAL)
+
+  metadata    Json?
+
+  leida       Boolean  @default(false)
+  archivar    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@index([leida, createdAt])
+  @@index([tipo])
+}
+
+enum TipoNotificacion {
+  PRESUPUESTO_80
+  PRESUPUESTO_90
+  PRESUPUESTO_100
+  CREDITO_PROXIMO
+  CREDITO_VENCIDO
+  AHORRO_BAJO
+  AHORRO_META
+  GASTO_INUSUAL
+  LOGRO_DESBLOQUEADO
+  INSIGHT_IA
+}
+
+enum Prioridad {
+  BAJA
+  NORMAL
+  ALTA
+  URGENTE
+}
