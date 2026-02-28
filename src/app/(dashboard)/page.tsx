@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const [creditos, fuentes, gastosFijosDB] = await Promise.all([
     prisma.credito.findMany({ where: { activo: true }, orderBy: { diaPago: 'asc' } }),
     prisma.fuenteIngreso.findMany({ where: { activo: true } }),
-    prisma.gastoFijo.findMany({ where: { activo: true } }),
+    prisma.gastoFijo.findMany({ where: { activo: true }, include: { categoria: true } }),
   ])
 
   const hoy = new Date()
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       {
         nombre: gf.nombre,
         monto: Number(gf.monto),
-        categoria: gf.categoria as string,
+        categoria: gf.categoria.nombre,
         frecuencia: gf.frecuencia as any,
         diaMes: gf.diaMes ?? undefined,
         fechaBase: gf.fechaBase,
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
         data: {
           descripcion: gf.nombre,
           monto: gf.monto,
-          categoria: gf.categoria,
+          categoriaId: gf.categoriaId,
           fecha: ocurrencia,
           fuente: 'WEB',
         },
@@ -60,8 +60,8 @@ export default async function DashboardPage() {
   inicioMes.setHours(0, 0, 0, 0)
 
   const [gastosMes, gastosRecientes] = await Promise.all([
-    prisma.gasto.findMany({ where: { fecha: { gte: inicioMes } } }),
-    prisma.gasto.findMany({ orderBy: { fecha: 'desc' }, take: 8 }),
+    prisma.gasto.findMany({ where: { fecha: { gte: inicioMes } }, include: { categoria: true } }),
+    prisma.gasto.findMany({ orderBy: { fecha: 'desc' }, take: 8, include: { categoria: true } }),
   ])
 
   const totalMes = gastosMes.reduce((s, g) => s + Number(g.monto), 0)
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
   const salarioTotal = fuentes.reduce((s, f) => s + Number(f.monto), 0)
 
   const porCategoria = gastosMes.reduce((acc, g) => {
-    const key = g.categoria as string
+    const key = g.categoria.nombre
     acc[key] = (acc[key] || 0) + Number(g.monto)
     return acc
   }, {} as Record<string, number>)
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
   const gastosFijosInput: GastoFijoInput[] = gastosFijosDB.map(gf => ({
     nombre: gf.nombre,
     monto: Number(gf.monto),
-    categoria: gf.categoria as string,
+    categoria: gf.categoria.nombre,
     frecuencia: gf.frecuencia as any,
     diaMes: gf.diaMes ?? undefined,
     fechaBase: gf.fechaBase,
@@ -193,7 +193,7 @@ export default async function DashboardPage() {
           <div className="space-y-3">
             {gastosRecientes.map(g => (
               <div key={g.id} className="flex items-center gap-3">
-                <span className="text-xl shrink-0">{EMOJI[g.categoria as string] ?? '📦'}</span>
+                <span className="text-xl shrink-0">{EMOJI[g.categoria.nombre] ?? '📦'}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-200 truncate">{g.descripcion}</p>
                   <p className="text-xs text-slate-500">

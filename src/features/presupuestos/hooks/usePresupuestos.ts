@@ -3,14 +3,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 export function usePresupuestos() {
   return useQuery({
     queryKey: ['presupuestos'],
-    queryFn: () => fetch('/api/presupuestos').then(r => r.json()).then(res => res.data),
+    queryFn: () => fetch('/api/presupuestos').then(async r => {
+      const json = await r.json()
+      if (!r.ok || !json.ok) {
+        throw new Error(json.error?.message || 'Error al obtener presupuestos')
+      }
+      return json.data
+    }),
   })
 }
 
 export function usePresupuestoStatus(periodo: string) {
   return useQuery({
     queryKey: ['presupuesto-status', periodo],
-    queryFn: () => fetch(`/api/presupuestos/status?periodo=${periodo}`).then(r => r.json()).then(res => res.data),
+    queryFn: () => fetch(`/api/presupuestos/status?periodo=${periodo}`).then(async r => {
+      const json = await r.json()
+      if (!r.ok || !json.ok) {
+        throw new Error(json.error?.message || 'Error al obtener estado de presupuestos')
+      }
+      return json.data
+    }),
   })
 }
 
@@ -36,6 +48,12 @@ export function useCreatePresupuesto() {
 export function useCategorias() {
   return useQuery({
     queryKey: ['categorias'],
-    queryFn: () => fetch('/api/categorias').then(r => r.json()).then(res => res.data),
+    queryFn: () => fetch('/api/categorias').then(async r => {
+      const json = await r.json()
+      if (!r.ok || !json.ok) {
+        throw new Error(json.error?.message || 'Error al obtener categorías')
+      }
+      return json.data
+    }),
   })
 }

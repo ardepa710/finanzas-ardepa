@@ -15,6 +15,7 @@ export async function GET() {
   const gastosMes = await prisma.gasto.findMany({
     where: { fecha: { gte: inicioMes } },
     orderBy: { fecha: 'desc' },
+    include: { categoria: true },
   })
 
   const creditosInput = creditos.map(c => ({
@@ -40,7 +41,7 @@ export async function GET() {
     : null
 
   const porCategoria = gastosMes.reduce((acc, g) => {
-    const key = g.categoria as string
+    const key = g.categoria.nombre
     acc[key] = (acc[key] || 0) + Number(g.monto)
     return acc
   }, {} as Record<string, number>)
