@@ -3,8 +3,10 @@ import {
   getNextOccurrences,
   getNextCreditDueDate,
   calcularResumenAhorro,
+  getLastOccurrence,
   type FuenteIngresoInput,
   type CreditoInput,
+  type GastoFijoInput,
 } from './savings-calculator'
 
 // Fixed test date: Wednesday March 5, 2026
@@ -146,5 +148,115 @@ describe('calcularResumenAhorro', () => {
     const result = calcularResumenAhorro(creditos, fuentes, HOY)
     const c = result.cobros[0]
     expect(c.disponible).toBe(c.montoIngreso - c.totalApartar)
+  })
+})
+
+// ─── GastoFijo tests ───────────────────────────────────────────
+
+describe('getLastOccurrence', () => {
+  it('MENSUAL: returns this month date if diaMes has passed', () => {
+    // HOY = 5 mar 2026, diaMes=1 → el 1 mar ya pasó
+    const gasto: GastoFijoInput = {
+      nombre: 'Renta',
+      monto: 5000,
+      categoria: 'SERVICIOS',
+      frecuencia: 'MENSUAL',
+      diaMes: 1,
+      fechaBase: new Date(2026, 0, 1),
+    }
+    const result = getLastOccurrence(gasto, HOY)
+    expect(result).toEqual(new Date(2026, 2, 1)) // 1 mar
+  })
+
+  it('MENSUAL: returns previous month if diaMes has not passed yet', () => {
+    // HOY = 5 mar 2026, diaMes=15 → el 15 mar no ha pasado → feb 15
+    const gasto: GastoFijoInput = {
+      nombre: 'Renta',
+      monto: 5000,
+      categoria: 'SERVICIOS',
+      frecuencia: 'MENSUAL',
+      diaMes: 15,
+      fechaBase: new Date(2026, 0, 15),
+    }
+    const result = getLastOccurrence(gasto, HOY)
+    expect(result).toEqual(new Date(2026, 1, 15)) // 15 feb
+  })
+
+  it('QUINCENAL: returns the most recent 14-day cycle date <= today', () => {
+    // fechaBase = 2 mar (lunes), HOY = 5 mar → last occurrence is 2 mar
+    const gasto: GastoFijoInput = {
+      nombre: 'Netflix',
+      monto: 300,
+      categoria: 'ENTRETENIMIENTO',
+      frecuencia: 'QUINCENAL',
+      fechaBase: new Date(2026, 2, 2),
+    }
+    const result = getLastOccurrence(gasto, HOY)
+    expect(result).toEqual(new Date(2026, 2, 2)) // 2 mar
+  })
+
+  it('SEMANAL: returns the most recent 7-day cycle date <= today', () => {
+    // fechaBase = 2 mar (lunes), HOY = 5 mar (jue) → last occurrence is 2 mar
+    const gasto: GastoFijoInput = {
+      nombre: 'Mercado',
+      monto: 800,
+      categoria: 'ALIMENTACION',
+      frecuencia: 'SEMANAL',
+      fechaBase: new Date(2026, 2, 2),
+    }
+    const result = getLastOccurrence(gasto, HOY)
+    expect(result).toEqual(new Date(2026, 2, 2)) // 2 mar
+  })
+
+  it('returns null if fechaBase is in the future', () => {
+    const gasto: GastoFijoInput = {
+      nombre: 'Nuevo gasto',
+      monto: 100,
+      categoria: 'OTROS',
+      frecuencia: 'SEMANAL',
+      fechaBase: new Date(2026, 3, 1), // 1 abr (futuro)
+    }
+    const result = getLastOccurrence(gasto, HOY)
+    expect(result).toBeNull()
+  })
+})
+
+describe('calcularResumenAhorro con gastosFijos', () => {
+  it('includes gastos fijos in disponible calculation', () => {
+    const fuentes: FuenteIngresoInput[] = [{
+      nombre: 'Salario',
+      monto: 22000,
+      frecuencia: 'QUINCENAL',
+      fechaBase: new Date(2026, 2, 2),
+    }]
+    const creditos: CreditoInput[] = []
+    const gastosFijos: GastoFijoInput[] = [{
+      nombre: 'Renta',
+      monto: 5000,
+      categoria: 'SERVICIOS',
+      frecuencia: 'MENSUAL',
+      diaMes: 20,
+      fechaBase: new Date(2026, 0, 20),
+    }]
+    const result = calcularResumenAhorro(creditos, fuentes, HOY, 3, gastosFijos)
+    // Renta vence el 20 mar, cobro el 16 mar → debe aparecer en cobro[0]
+    const cobro0 = result.cobros[0]
+    expect(cobro0.desgloseGastosFijos.length).toBeGreaterThan(0)
+    expect(cobro0.desgloseGastosFijos[0].creditoNombre).toBe('Renta')
+    expect(cobro0.disponible).toBeLessThan(22000)
+  })
+
+  it('backward compatible: works with no gastosFijos argument', () => {
+    const fuentes: FuenteIngresoInput[] = [{
+      nombre: 'Salario',
+      monto: 10000,
+      frecuencia: 'MENSUAL',
+      diaMes: 15,
+      fechaBase: new Date(2026, 0, 15),
+    }]
+    const creditos: CreditoInput[] = []
+    // Old signature: no gastosFijos
+    const result = calcularResumenAhorro(creditos, fuentes, HOY)
+    expect(result.cobros[0].desgloseGastosFijos).toEqual([])
   })
 })

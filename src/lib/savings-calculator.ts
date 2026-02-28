@@ -20,6 +20,16 @@ export interface CreditoInput {
   fechaBase?: Date       // only SEMANAL/QUINCENAL
 }
 
+export interface GastoFijoInput {
+  nombre: string
+  monto: number
+  categoria: string
+  frecuencia: FrecuenciaPago
+  diaMes?: number
+  diaSemana?: number
+  fechaBase?: Date
+}
+
 export interface DesgloseCobro {
   creditoNombre: string
   monto: number
@@ -30,6 +40,7 @@ export interface ProyeccionCobro {
   fuenteNombre: string
   montoIngreso: number
   desglose: DesgloseCobro[]
+  desgloseGastosFijos: DesgloseCobro[]
   totalApartar: number
   disponible: number
 }
@@ -58,6 +69,37 @@ function getNextByInterval(fechaBase: Date, hoy: Date, step: number, n: number):
     cursor = addDays(cursor, step)
   }
   return result
+}
+
+/**
+ * Devuelve la ocurrencia más reciente del gasto fijo que ya ocurrió (≤ hoy).
+ * Returns null si fechaBase está en el futuro.
+ */
+export function getLastOccurrence(gasto: GastoFijoInput, hoy: Date): Date | null {
+  const today = startOfDay(hoy)
+
+  if (gasto.frecuencia === 'MENSUAL') {
+    if (gasto.diaMes == null) throw new Error('GastoFijo MENSUAL requiere diaMes')
+    const dia = gasto.diaMes
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), dia)
+    if (thisMonth <= today) return thisMonth
+    return new Date(today.getFullYear(), today.getMonth() - 1, dia)
+  }
+
+  const step = gasto.frecuencia === 'SEMANAL' ? 7 : 14
+  if (!gasto.fechaBase) throw new Error(`GastoFijo ${gasto.frecuencia} requiere fechaBase`)
+
+  let cursor = startOfDay(gasto.fechaBase)
+  if (cursor > today) return null
+
+  let last: Date = new Date(cursor)
+  while (true) {
+    const next = addDays(cursor, step)
+    if (next > today) break
+    last = new Date(next)
+    cursor = next
+  }
+  return last
 }
 
 export function getNextOccurrences(
@@ -108,7 +150,8 @@ export function calcularResumenAhorro(
   creditos: CreditoInput[],
   fuentes: FuenteIngresoInput[],
   hoy: Date,
-  horizonte = 3
+  horizonte = 3,
+  gastosFijos: GastoFijoInput[] = []
 ): ResumenAhorro {
   const todosLosCobros: Array<{ fecha: Date; fuente: FuenteIngresoInput }> = []
   for (const fuente of fuentes) {
@@ -119,7 +162,7 @@ export function calcularResumenAhorro(
 
   const cobrosFinal = todosLosCobros.slice(0, horizonte)
 
-  const cobros: ProyeccionCobro[] = cobrosFinal.map(({ fecha, fuente }) => {
+  const cobros: ProyeccionCobro[] = cobrosFinal.map(({ fecha, fuente }, idx) => {
     const desglose: DesgloseCobro[] = []
 
     for (const credito of creditos) {
@@ -134,7 +177,33 @@ export function calcularResumenAhorro(
       }
     }
 
-    const totalApartar = Math.round(desglose.reduce((s, d) => s + d.monto, 0) * 100) / 100
+    // ── Gastos fijos ──
+    // Window: from this cobro date to the next cobro date (or +30 days if last)
+    const nextCobroFecha = cobrosFinal[idx + 1]?.fecha ?? addDays(fecha, 30)
+    const desgloseGastosFijos: DesgloseCobro[] = []
+    for (const gf of gastosFijos) {
+      // Next occurrence of this gasto fijo from this cobro's date
+      const occurrences = getNextOccurrences(
+        {
+          nombre: gf.nombre,
+          monto: gf.monto,
+          frecuencia: gf.frecuencia,
+          diaMes: gf.diaMes,
+          fechaBase: gf.fechaBase ?? fecha,
+          diaSemana: gf.diaSemana,
+        },
+        fecha,
+        1
+      )
+      const nextOcc = occurrences[0]
+      if (nextOcc && nextOcc < nextCobroFecha) {
+        desgloseGastosFijos.push({ creditoNombre: gf.nombre, monto: gf.monto })
+      }
+    }
+
+    const totalApartar = Math.round(
+      [...desglose, ...desgloseGastosFijos].reduce((s, d) => s + d.monto, 0) * 100
+    ) / 100
     const montoIngreso = fuente.monto ?? 0
 
     return {
@@ -142,6 +211,7 @@ export function calcularResumenAhorro(
       fuenteNombre: fuente.nombre ?? 'Ingreso',
       montoIngreso,
       desglose,
+      desgloseGastosFijos,
       totalApartar,
       disponible: Math.round((montoIngreso - totalApartar) * 100) / 100,
     }
