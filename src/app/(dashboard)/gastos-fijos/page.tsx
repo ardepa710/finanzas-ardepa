@@ -89,6 +89,7 @@ export default function GastosFijosPage() {
         <GastoFijoForm
           initial={{
             ...editando,
+            frecuencia: editando.frecuencia as 'MENSUAL' | 'QUINCENAL' | 'SEMANAL',
             monto: String(editando.monto),
             diaSemana: editando.diaSemana != null ? String(editando.diaSemana) : '',
             diaMes: editando.diaMes != null ? String(editando.diaMes) : '',

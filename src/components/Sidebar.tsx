@@ -6,6 +6,7 @@ const links = [
   { href: '/', label: '📊 Dashboard' },
   { href: '/ingresos', label: '💰 Ingresos' },
   { href: '/gastos', label: '💸 Gastos' },
+  { href: '/gastos-fijos', label: '🔒 Gastos fijos' },
   { href: '/creditos', label: '💳 Créditos' },
 ]
 
