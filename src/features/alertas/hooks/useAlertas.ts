@@ -54,27 +54,15 @@ export function useMarkAllAsRead() {
 
   return useMutation({
     mutationFn: async () => {
-      // Get all unread notifications
-      const response = await fetch('/api/alertas?todas=false')
+      // Use bulk endpoint to mark all as read in single transaction
+      const response = await fetch('/api/alertas/mark-all-read', {
+        method: 'PUT',
+      })
       const json = await response.json()
       if (!response.ok || !json.ok) {
-        throw new Error(json.error?.message || 'Error al obtener alertas')
+        throw new Error(json.error?.message || 'Error al marcar todas como leídas')
       }
-
-      const unreadNotifications = json.data as Notificacion[]
-
-      // Mark each as read
-      await Promise.all(
-        unreadNotifications.map(n =>
-          fetch(`/api/alertas/${n.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leida: true }),
-          })
-        )
-      )
-
-      return true
+      return json.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alertas'] })

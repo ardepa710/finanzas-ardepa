@@ -7,12 +7,21 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
   const notificacionesNoLeidas = useStore((s) => s.notificacionesNoLeidas)
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setIsOpen(!isOpen)
+    }
+  }
+
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
         className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors"
         aria-label="Notificaciones"
+        aria-expanded={isOpen}
       >
         {/* Bell Icon (SVG) */}
         <svg

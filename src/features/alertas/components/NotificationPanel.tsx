@@ -1,4 +1,5 @@
 'use client'
+import { useEffect } from 'react'
 import { useAlertas, useMarkAsRead, useMarkAllAsRead } from '../hooks/useAlertas'
 import NotificationItem from './NotificationItem'
 import { useToast } from '@/shared/hooks/useToast'
@@ -54,6 +55,17 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
     })
   }
 
+  // Escape key to close panel
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
@@ -61,14 +73,21 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClose()
+        }}
       />
 
       {/* Panel */}
-      <div className="absolute top-14 right-4 w-96 max-h-[32rem] bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50 flex flex-col">
+      <div
+        role="dialog"
+        aria-labelledby="notification-header"
+        className="absolute top-14 right-4 w-96 max-h-[32rem] bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50 flex flex-col"
+      >
         {/* Header */}
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-200">Notificaciones</h3>
+          <h3 id="notification-header" className="text-sm font-semibold text-slate-200">Notificaciones</h3>
           {notificaciones && notificaciones.length > 0 && (
             <button
               onClick={handleMarkAllAsRead}
