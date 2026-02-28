@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TipoNotificacion, Prioridad } from '@/generated/prisma/client'
+import { TipoNotificacion, Prioridad, TipoActivo, Liquidez } from '@/generated/prisma/client'
 
 export const gastoSchema = z.object({
   descripcion: z.string().min(1).max(200),
@@ -30,4 +30,28 @@ export const notificacionSchema = z.object({
   mensaje: z.string().min(1),
   prioridad: z.nativeEnum(Prioridad).optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+})
+
+export const activoSchema = z.object({
+  nombre: z.string().min(1).max(100),
+  tipo: z.nativeEnum(TipoActivo),
+  valorActual: z.number().positive(),
+  valorCompra: z.number().positive().optional(),
+  fechaAdquisicion: z.coerce.date().optional(),
+  descripcion: z.string().max(500).optional(),
+  liquidez: z.nativeEnum(Liquidez).optional(),
+})
+
+export const updateActivoSchema = z.object({
+  nombre: z.string().min(1).max(100).optional(),
+  valorActual: z.number().positive().optional(),
+  descripcion: z.string().max(500).optional(),
+  liquidez: z.nativeEnum(Liquidez).optional(),
+  activo: z.boolean().optional(),
+})
+
+export const valoracionSchema = z.object({
+  valor: z.number().positive(),
+  fecha: z.coerce.date(),
+  notas: z.string().max(500).optional(),
 })

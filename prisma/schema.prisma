@@ -195,3 +195,49 @@ enum Prioridad {
   ALTA
   URGENTE
 }
+
+enum TipoActivo {
+  INMUEBLE
+  VEHICULO
+  INVERSION
+  AHORRO
+  EFECTIVO
+  OTRO
+}
+
+enum Liquidez {
+  ALTA
+  MEDIA
+  BAJA
+}
+
+model Activo {
+  id                String      @id @default(cuid())
+  nombre            String
+  tipo              TipoActivo
+  valorActual       Decimal     @db.Decimal(12, 2)
+  valorCompra       Decimal?    @db.Decimal(12, 2)
+  fechaAdquisicion  DateTime?
+  descripcion       String?     @db.Text
+  liquidez          Liquidez    @default(MEDIA)
+  activo            Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  historico         ValoracionActivo[]
+
+  @@index([activo])
+  @@index([tipo])
+}
+
+model ValoracionActivo {
+  id        String   @id @default(cuid())
+  activoId  String
+  activo    Activo   @relation(fields: [activoId], references: [id], onDelete: Cascade)
+  valor     Decimal  @db.Decimal(12, 2)
+  fecha     DateTime
+  notas     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([activoId, fecha])
+}
