@@ -11,9 +11,9 @@ const EMOJI: Record<string, string> = {
 }
 
 export default async function DashboardPage() {
-  const [creditos, config] = await Promise.all([
+  const [creditos, fuentes] = await Promise.all([
     prisma.credito.findMany({ where: { activo: true }, orderBy: { diaPago: 'asc' } }),
-    prisma.configuracionSalario.findFirst(),
+    prisma.fuenteIngreso.findMany({ where: { activo: true } }),
   ])
 
   const inicioMes = new Date()
@@ -27,6 +27,7 @@ export default async function DashboardPage() {
 
   const totalMes = gastosMes.reduce((s, g) => s + Number(g.monto), 0)
   const totalDeuda = creditos.reduce((s, c) => s + Number(c.saldoActual), 0)
+  const salarioTotal = fuentes.reduce((s, f) => s + Number(f.monto), 0)
 
   const porCategoria = gastosMes.reduce((acc, g) => {
     const key = g.categoria as string
@@ -34,16 +35,27 @@ export default async function DashboardPage() {
     return acc
   }, {} as Record<string, number>)
 
-  const resumenAhorro = config
+  const resumenAhorro = fuentes.length > 0
     ? calcularResumenAhorro(
-        creditos.map(c => ({ nombre: c.nombre, pagoMensual: Number(c.pagoMensual), diaPago: c.diaPago })),
-        config.fechaBaseProximoPago,
-        new Date(),
-        Number(config.monto)
+        creditos.map(c => ({
+          nombre: c.nombre,
+          pagoMensual: Number(c.pagoMensual),
+          frecuencia: c.frecuencia as any,
+          diaPago: c.diaPago,
+          diaSemana: c.diaSemana ?? undefined,
+          fechaBase: c.fechaBase ?? undefined,
+        })),
+        fuentes.map(f => ({
+          nombre: f.nombre,
+          monto: Number(f.monto),
+          frecuencia: f.frecuencia as any,
+          diaMes: f.diaMes ?? undefined,
+          diaSemana: f.diaSemana ?? undefined,
+          fechaBase: f.fechaBase,
+        })),
+        new Date()
       )
     : null
-
-  const salario = config ? Number(config.monto) : 22000
 
   return (
     <div className="space-y-6">
@@ -58,9 +70,9 @@ export default async function DashboardPage() {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card">
-          <p className="text-xs text-slate-500 mb-1">Salario quincenal</p>
-          <p className="text-2xl font-bold text-emerald-400">${salario.toLocaleString('es-MX')}</p>
-          <p className="text-xs text-slate-600 mt-1">MXN</p>
+          <p className="text-xs text-slate-500 mb-1">Ingresos configurados</p>
+          <p className="text-2xl font-bold text-emerald-400">${salarioTotal.toLocaleString('es-MX')}</p>
+          <p className="text-xs text-slate-600 mt-1">MXN · {fuentes.length} {fuentes.length === 1 ? 'fuente' : 'fuentes'}</p>
         </div>
         <div className="card">
           <p className="text-xs text-slate-500 mb-1">Gastos del mes</p>
@@ -80,7 +92,7 @@ export default async function DashboardPage() {
           <SavingsCard resumen={resumenAhorro} />
         ) : (
           <div className="card flex items-center justify-center h-48">
-            <p className="text-slate-500 text-sm">Sin configuración de salario</p>
+            <p className="text-slate-500 text-sm">Configura tus ingresos para ver el plan de ahorro</p>
           </div>
         )}
         <ExpensesPieChart porCategoria={porCategoria} />
