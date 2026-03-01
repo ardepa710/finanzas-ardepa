@@ -2,6 +2,7 @@ import SavingsCard from '@/components/dashboard/SavingsCard'
 import ExpensesPieChart from '@/components/dashboard/ExpensesPieChart'
 import { prisma } from '@/lib/prisma'
 import { calcularResumenAhorro, getLastOccurrence, type GastoFijoInput } from '@/lib/savings-calculator'
+import InsightsSection from '@/features/insights/components/InsightsSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -135,6 +136,9 @@ export default async function DashboardPage() {
           <p className="text-xs text-slate-600 mt-1">{creditos.length} créditos activos</p>
         </div>
       </div>
+
+      {/* AI Insights */}
+      <InsightsSection />
 
       {/* Savings + Pie chart */}
       <div className="grid grid-cols-2 gap-4">
