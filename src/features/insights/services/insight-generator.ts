@@ -1,9 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import type { ContextoFinanciero, InsightGenerado } from '../types'
+import type { FuenteIngreso, Gasto, Credito, Meta } from '@/generated/prisma/client'
 
-function toNum(v: any): number {
-  return typeof v === 'object' && v !== null && 'toNumber' in v ? v.toNumber() : Number(v)
+function toNum(v: { toNumber(): number } | number | null | undefined): number {
+  if (v == null) return 0
+  return typeof v === 'object' && 'toNumber' in v ? v.toNumber() : Number(v)
 }
 
 export async function buildContexto(): Promise<ContextoFinanciero> {
@@ -16,28 +18,28 @@ export async function buildContexto(): Promise<ContextoFinanciero> {
     prisma.meta.findMany({ where: { activo: true } }),
   ])
 
-  const ingresoMensual = fuentes.reduce((acc: number, f: any) => {
+  const ingresoMensual = fuentes.reduce((acc: number, f: FuenteIngreso) => {
     const monto = toNum(f.monto)
     const factor = f.frecuencia === 'MENSUAL' ? 1 : f.frecuencia === 'QUINCENAL' ? 2 : 4.33
     return acc + monto * factor
   }, 0)
 
   const gastoPromedio90d = gastos90d.length > 0
-    ? gastos90d.reduce((acc: number, g: any) => acc + toNum(g.monto), 0) / 3
+    ? gastos90d.reduce((acc: number, g: Gasto) => acc + toNum(g.monto), 0) / 3
     : 0
 
-  const deudaTotal = creditos.reduce((acc: number, c: any) => acc + toNum(c.saldoActual), 0)
+  const deudaTotal = creditos.reduce((acc: number, c: Credito) => acc + toNum(c.saldoActual), 0)
   const dti = ingresoMensual > 0
-    ? (creditos.reduce((acc: number, c: any) => acc + toNum(c.pagoMensual), 0) / ingresoMensual) * 100
+    ? (creditos.reduce((acc: number, c: Credito) => acc + toNum(c.pagoMensual), 0) / ingresoMensual) * 100
     : 0
   const savingsRate = ingresoMensual > 0
     ? Math.max(0, ((ingresoMensual - gastoPromedio90d) / ingresoMensual) * 100)
     : 0
 
-  const metasActivas = (metas as any[]).filter((m: any) => m.estado === 'EN_PROGRESO').length
+  const metasActivas = metas.filter((m: Meta) => m.estado === 'EN_PROGRESO').length
   const metasProgreso = metasActivas > 0
-    ? (metas as any[]).filter((m: any) => m.estado === 'EN_PROGRESO')
-        .reduce((acc: number, m: any) => acc + toNum(m.porcentajeProgreso), 0) / metasActivas
+    ? metas.filter((m: Meta) => m.estado === 'EN_PROGRESO')
+        .reduce((acc: number, m: Meta) => acc + toNum(m.porcentajeProgreso), 0) / metasActivas
     : 0
 
   return {
@@ -85,12 +87,19 @@ Genera insights específicos basados en estos números reales.`
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
     const insights: InsightGenerado[] = JSON.parse(text)
+    if (!Array.isArray(insights)) return []
+
+    // Filter valid insights before persisting
+    const validInsights = insights.filter(ins => ins.tipo && ins.titulo && ins.prioridad)
 
     // Persist top 4 insights to DB for history
-    await Promise.all(insights.slice(0, 4).map((ins: InsightGenerado) =>
+    await Promise.all(validInsights.slice(0, 4).map((ins: InsightGenerado) =>
       prisma.insight.create({
         data: {
-          tipo: ins.tipo === 'ALERTA' ? 'GASTOS' : ins.tipo === 'OPORTUNIDAD' ? 'AHORRO' : 'GENERAL',
+          tipo: ins.tipo === 'ALERTA' ? 'GASTOS'
+              : ins.tipo === 'OPORTUNIDAD' ? 'AHORRO'
+              : ins.tipo === 'LOGRO' ? 'GENERAL'
+              : 'GENERAL',
           titulo: ins.titulo,
           contenido: `${ins.descripcion} ${ins.accion}`,
           prioridad: ins.prioridad >= 4 ? 'URGENTE' : ins.prioridad >= 3 ? 'ALTA' : 'NORMAL',
@@ -101,7 +110,8 @@ Genera insights específicos basados en estos números reales.`
     ))
 
     return insights.sort((a, b) => b.prioridad - a.prioridad)
-  } catch {
+  } catch (error) {
+    console.error('[insights] generarInsights failed:', error)
     return []
   }
 }
