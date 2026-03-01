@@ -372,3 +372,36 @@ model Contribucion {
   @@index([metaId])
   @@index([fecha])
 }
+
+enum TipoInsight {
+  GASTOS
+  INGRESOS
+  DEUDA
+  AHORRO
+  INVERSION
+  PRESUPUESTO
+  GENERAL
+}
+
+model Insight {
+  id          String      @id @default(cuid())
+
+  tipo        TipoInsight
+  titulo      String
+  contenido   String      @db.Text
+  prioridad   Prioridad   @default(NORMAL)
+
+  // AI metadata
+  modelo      String      @default("claude-haiku-4-5-20251001")
+  tokens      Int?
+
+  // User interaction
+  leido       Boolean     @default(false)
+  util        Boolean?    // User feedback: was this helpful?
+
+  createdAt   DateTime    @default(now())
+
+  @@index([tipo])
+  @@index([leido])
+  @@index([createdAt])
+}
