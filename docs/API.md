@@ -649,10 +649,25 @@ Evaluates all achievement unlock conditions based on current data. Unlocks any n
 
 **Response:**
 ```json
-{ "ok": true, "data": {
-  "desbloqueados": ["PRIMER_GASTO", "SEMANA_PERFECTA"],
-  "xpGanado": 60
-}}
+{
+  "ok": true,
+  "data": {
+    "nuevos": [
+      {
+        "id": "clx...",
+        "codigo": "PRIMER_GASTO",
+        "nombre": "Primer Registro",
+        "descripcion": "Registraste tu primer gasto",
+        "icono": "📝",
+        "categoria": "GASTO",
+        "xp": 10,
+        "desbloqueado": true,
+        "fechaLogro": "2026-03-01T22:00:00.000Z"
+      }
+    ],
+    "xpGanado": 10
+  }
+}
 ```
 
 ### GET /api/gamificacion/streaks
@@ -674,6 +689,17 @@ Returns current streak status for all tracked streak types.
 ### POST /api/gamificacion/streaks/check
 
 Checks and updates streak status based on today's activity. Called automatically when a new expense is logged.
+
+**Response:**
+```json
+{
+  "ok": true,
+  "data": {
+    "actualizado": true,
+    "nuevaRacha": 8
+  }
+}
+```
 
 ---
 

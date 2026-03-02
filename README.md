@@ -53,7 +53,7 @@ Personal Finance Manager — track expenses, manage debt, plan savings, and get 
 
 ```bash
 npm install
-cp .env.example .env.local  # add DATABASE_URL, ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_CHAT_ID
+cp .env.example .env.local  # ⚠️ Add DATABASE_URL before running next step — see docs/SETUP.md Step 3
 npx prisma migrate dev
 npx prisma db seed && npx tsx prisma/gamificacion-seed.ts
 npm run dev

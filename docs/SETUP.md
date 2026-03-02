@@ -158,15 +158,27 @@ This starts `scripts/bot.ts` in long-polling mode — it connects directly to Te
 
 ## Docker (Alternative)
 
-A `docker-compose.yml` is included that runs the app + PostgreSQL:
+A `docker-compose.yml` is included that runs the full stack. Docker reads from a `.env` file (not `.env.local`) in the project root.
+
+**Required `.env` variables for Docker:**
+```env
+DB_PASSWORD=cambia_esta_contraseña_segura
+TELEGRAM_BOT_TOKEN=tu_token_aqui
+TELEGRAM_ALLOWED_CHAT_ID=tu_chat_id_aqui
+```
 
 ```bash
+cp .env.example .env  # fill in the required values above
 docker compose up -d --build
 ```
 
 Services:
-- `web` — Next.js app on port 3000
-- `db` — PostgreSQL 15 on port 5432
+| Service | Description | Notes |
+|---------|-------------|-------|
+| `db` | PostgreSQL 16 | Persists data in `pgdata` volume |
+| `migrate` | Prisma migrate deploy | Runs once on startup, then exits |
+| `web` | Next.js app | Exposed on `WEB_PORT` (default 3000) |
+| `bot` | Telegram polling bot | Requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_CHAT_ID` |
 
 ---
 
