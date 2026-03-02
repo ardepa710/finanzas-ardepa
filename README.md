@@ -1,182 +1,87 @@
-# FINANZAS ARDEPA
+# finanzas-ardepa
 
-App de finanzas personales local — gestión de créditos, gastos diarios vía Telegram y dashboard financiero inteligente.
+Personal Finance Manager — track expenses, manage debt, plan savings, and get AI-powered insights. Dual interface: web dashboard + Telegram bot.
 
-**Stack:** Next.js 15 · Tailwind CSS v4 · Prisma 7 · PostgreSQL · Recharts · Telegram Bot API
+## Features
 
----
+| # | Task | Status | Description |
+|---|------|--------|-------------|
+| 1 | Expense Tracking (Gastos) | ✅ | CRUD for daily expenses with categories |
+| 2 | Income Sources (Fuentes de Ingreso) | ✅ | Recurring income sources with frequency support |
+| 3 | Fixed Expenses (Gastos Fijos) | ✅ | Recurring fixed expenses, auto-applied on dashboard load |
+| 4 | Smart Savings Calculator | ✅ | Distributes debt payments across upcoming paychecks |
+| 5 | Budget Management (Presupuestos) | ✅ | Category budgets with 80/90/100% alert thresholds |
+| 6 | Alerts Backend | ✅ | Notification system with priorities and types |
+| 7 | Alerts Frontend | ✅ | NotificationBell with panel, filters, real-time refresh |
+| 8 | Alert Rules Engine | ✅ | Budget, credit, and expense anomaly alert triggers |
+| 9 | Reports Backend | ✅ | Expense, income, debt, and cashflow report APIs |
+| 10 | Reports Frontend | ✅ | Tab-based report views with trend indicators |
+| 11 | Snowball Strategy | ✅ | Debt payoff calculator (lowest balance first) |
+| 12 | Avalanche Strategy | ✅ | Debt payoff calculator (highest interest first) |
+| 13 | Debt Strategy Comparator | ✅ | Side-by-side comparison with interactive extra-payment slider |
+| 14 | Financial Ratios | ✅ | Debt-to-Income, Savings Rate, Emergency Fund, Liquidity Ratio |
+| 15 | Cashflow Projection | ✅ | 1–12 month forward-looking cashflow forecast |
+| 16 | Asset Tracking (Activos) | ✅ | Track assets by type (property, vehicle, investment, etc.) |
+| 17 | Net Worth (Patrimonio) | ✅ | Assets minus liabilities with breakdown by type and liquidity |
+| 18 | Long-term Projections | ✅ | 1–5 year financial projections with debt liberation modeling |
+| 19 | Investment Tracking | ✅ | Track investments with returns, CAGR, and transaction history |
+| 20 | Savings Goals (Metas) | ✅ | Goal tracking with contributions and time-to-goal projections |
+| 21 | AI Smart Insights Backend | ✅ | Claude Haiku-powered personalized financial insights |
+| 22 | AI Smart Insights Frontend | ✅ | Insights page with feedback (helpful/not helpful) |
+| 23 | Achievement System (Logros) | ✅ | Gamification achievements with XP rewards |
+| 24 | Streak Tracking | ✅ | Daily expense logging and goal contribution streaks |
+| 25 | Levels + Gamification Page | ✅ | XP-based user level system with progress display |
+| 26 | UX Polish | ✅ | Skeleton loaders, EmptyState components, visual refinements |
+| 27 | Documentation | ✅ | Complete developer documentation |
 
-## Requisitos previos
+## Tech Stack
 
-- Node.js 20+
-- PostgreSQL local corriendo en puerto 5432
-- Bot de Telegram creado via [@BotFather](https://t.me/BotFather)
-- [ngrok](https://ngrok.com) para exponer el webhook
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16.1.6 + React 19 |
+| Database ORM | Prisma 7.4.1 + `@prisma/adapter-pg` |
+| Database | PostgreSQL 15+ |
+| Styling | Tailwind CSS v4 (dark theme) |
+| Charts | Recharts 3.7.0 |
+| State | TanStack React Query v5 + Zustand v5 |
+| AI | Anthropic Claude Haiku (`@anthropic-ai/sdk`) |
+| Bot | Telegram Bot API (`node-telegram-bot-api`) |
+| Testing | Vitest 4 + Happy DOM |
+| Validation | Zod v4 |
 
----
-
-## Setup inicial
-
-### 1. Clonar e instalar
+## Quick Start
 
 ```bash
-git clone <repo-url>
-cd finanzas-ardepa
 npm install
-```
-
-### 2. Crear base de datos PostgreSQL
-
-```bash
-# Ajusta usuario y contraseña según tu instalación
-psql -U postgres -c "CREATE DATABASE finanzas_ardepa;"
-```
-
-### 3. Variables de entorno
-
-Crear `.env.local` en la raíz del proyecto:
-
-```env
-DATABASE_URL="postgresql://ktcadmin:ktcpass123@127.0.0.1:5432/finanzas_ardepa"
-TELEGRAM_BOT_TOKEN="tu_token_de_botfather"
-TELEGRAM_ALLOWED_CHAT_ID="tu_chat_id"
-```
-
-**¿Cómo obtener tu `TELEGRAM_ALLOWED_CHAT_ID`?**
-Habla con [@userinfobot](https://t.me/userinfobot) en Telegram — te responde con tu chat_id.
-
-Crear también `.env` (para Prisma CLI):
-```env
-DATABASE_URL="postgresql://ktcadmin:ktcpass123@127.0.0.1:5432/finanzas_ardepa"
-```
-
-### 4. Migrar base de datos
-
-```bash
+cp .env.example .env.local  # add DATABASE_URL, ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_CHAT_ID
 npx prisma migrate dev
-npx prisma db seed   # Carga salario base $22,000 MXN
-```
-
-### 5. Correr la app
-
-```bash
+npx prisma db seed && npx tsx prisma/gamificacion-seed.ts
 npm run dev
 ```
 
-Abrir: [http://localhost:3000](http://localhost:3000)
+App runs at http://localhost:3000
 
----
+## Documentation
 
-## Activar bot de Telegram
+| File | Description |
+|------|-------------|
+| [docs/SETUP.md](docs/SETUP.md) | Full setup guide with Telegram bot configuration |
+| [docs/API.md](docs/API.md) | All REST API endpoints with request/response examples |
+| [docs/TELEGRAM.md](docs/TELEGRAM.md) | Bot commands and category reference |
+| [docs/FEATURES.md](docs/FEATURES.md) | Feature index organized by development week |
 
-El bot funciona via webhook — necesita que tu servidor local sea accesible desde internet.
+## Key Design Decisions
 
-### Terminal 1 — App
-```bash
-npm run dev
-```
+- **No authentication** — 100% local app, privacy by design
+- **Dual interface** — web dashboard + Telegram bot for on-the-go expense logging
+- **Prisma 7** — uses `prisma.config.ts` + `@prisma/adapter-pg` (different from v6)
+- **Soft delete** — credits and assets deactivated, not deleted (preserves history)
+- **Currency** — MXN fixed, no conversions
+- **Frequency normalization** — MENSUAL ×1, QUINCENAL ×2, SEMANAL ×4.33 for accurate projections
 
-### Terminal 2 — Túnel ngrok
-```bash
-ngrok http 3000
-```
-
-Copia la URL de ngrok (ej: `https://abc123.ngrok-free.app`).
-
-### Registrar webhook con Telegram
-```bash
-curl -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://abc123.ngrok-free.app/api/telegram"}'
-```
-
-Respuesta esperada: `{"ok":true,"result":true}`
-
-> **Nota:** ngrok genera una URL nueva cada vez que lo reinicias. Deberás re-registrar el webhook cuando cambies de URL.
-
----
-
-## Comandos del bot
-
-| Comando | Ejemplo | Descripción |
-|---------|---------|-------------|
-| `/gasto [cat] [monto] [desc]` | `/gasto Comida 180 Tacos` | Registra un gasto |
-| `/resumen` | `/resumen` | Gastos del día actual |
-| `/quincena` | `/quincena` | Gastos y total del mes |
-| `/creditos` | `/creditos` | Lista créditos activos con saldos |
-| `/ahorro` | `/ahorro` | Cuánto apartar en el próximo pago |
-| `/ayuda` | `/ayuda` | Lista de comandos |
-
-### Categorías válidas
-
-| Palabras aceptadas | Categoría |
-|-------------------|-----------|
-| comida, alimentacion, desayuno, almuerzo, cena | ALIMENTACION |
-| transporte, gasolina, uber, taxi, camion | TRANSPORTE |
-| entretenimiento, ocio, cine | ENTRETENIMIENTO |
-| salud, farmacia, doctor, medicina | SALUD |
-| servicios, renta, luz, agua, internet, telefono | SERVICIOS |
-| otros | OTROS |
-
----
-
-## Lógica financiera — Calculadora de ahorro
-
-La app calcula automáticamente cuánto apartar de cada quincena para cubrir tus créditos:
-
-1. Detecta tu próxima fecha de cobro (lunes alterno desde fecha base)
-2. Para cada crédito, identifica cuántos cobros caen antes de su fecha límite
-3. Distribuye el monto a pagar equitativamente entre esos cobros
-4. Muestra el desglose en el dashboard y via `/ahorro`
-
-**Ejemplo:** Si tienes 2 quincenas antes de pagar una tarjeta de $3,000, te recomienda apartar $1,500 en cada una.
-
----
-
-## Estructura del proyecto
-
-```
-src/
-├── app/
-│   ├── (dashboard)/
-│   │   ├── layout.tsx         # Layout con sidebar
-│   │   ├── page.tsx           # Dashboard principal
-│   │   ├── gastos/page.tsx    # CRUD gastos
-│   │   └── creditos/page.tsx  # CRUD créditos
-│   └── api/
-│       ├── telegram/          # Webhook bot
-│       ├── gastos/            # REST API gastos
-│       ├── creditos/          # REST API créditos
-│       └── dashboard/         # Endpoint resumen
-├── components/
-│   ├── Sidebar.tsx
-│   ├── creditos/CreditoForm.tsx
-│   └── dashboard/
-│       ├── SavingsCard.tsx
-│       └── ExpensesPieChart.tsx
-└── lib/
-    ├── prisma.ts              # Singleton Prisma
-    ├── savings-calculator.ts  # Lógica financiera (TDD)
-    └── telegram-handler.ts    # Parser comandos bot
-```
-
----
-
-## Tests
+## Running Tests
 
 ```bash
-npm test          # Correr todos los tests
-npm run test:watch  # Modo watch
+npm test          # run all tests
+npm run test:watch  # watch mode
 ```
-
-Los tests cubren la calculadora de ahorro (`src/lib/savings-calculator.test.ts`).
-
----
-
-## Notas de implementación
-
-- **Prisma 7.4.1** — Usa `prisma.config.ts` y `@prisma/adapter-pg` (arquitectura diferente a v6)
-- **PostgreSQL user** — Se usa `ktcadmin` (usuario existente en el sistema). Ajusta en `.env` y `.env.local`
-- **Moneda** — MXN fijo, sin conversiones
-- **Sin autenticación** — App 100% local
-- **Soft delete** — Los créditos se desactivan, no se borran (preserva historial)
