@@ -1,7 +1,7 @@
 'use client'
-import type { InsightGenerado } from '../types'
+import type { InsightGenerado, TipoInsightFrontend } from '../types'
 
-const ICONOS: Record<string, string> = {
+const ICONOS: Record<TipoInsightFrontend, string> = {
   ALERTA: '🚨',
   OPORTUNIDAD: '💡',
   LOGRO: '🏆',
