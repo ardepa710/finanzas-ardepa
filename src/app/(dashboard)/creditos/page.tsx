@@ -14,6 +14,7 @@ interface Credito {
   fechaCorte?: number | null
   diaPago: number
   tasaInteres?: string | number | null
+  montoTotalACobrar?: string | number | null
   activo: boolean
   frecuencia?: string
   diaSemana?: number | null
@@ -104,6 +105,7 @@ export default function CreditosPage() {
             fechaCorte: editando.fechaCorte ? String(editando.fechaCorte) : '',
             diaPago: String(editando.diaPago),
             tasaInteres: editando.tasaInteres ? String(editando.tasaInteres) : '',
+            montoTotalACobrar: editando.montoTotalACobrar ? String(editando.montoTotalACobrar) : '',
             frecuencia: editando.frecuencia as any,
             diaSemana: editando.diaSemana != null ? String(editando.diaSemana) : '',
             fechaBase: editando.fechaBase ? new Date(editando.fechaBase).toISOString().split('T')[0] : '',
@@ -176,8 +178,24 @@ export default function CreditosPage() {
                   </div>
                 </div>
 
-                {c.tasaInteres && (
-                  <p className="text-xs text-slate-500 mt-2">Tasa: {Number(c.tasaInteres)}% anual</p>
+                {(c.tasaInteres || c.montoTotalACobrar) && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                    {c.tasaInteres && (
+                      <p className="text-xs text-slate-500">Tasa: {Number(c.tasaInteres)}% anual</p>
+                    )}
+                    {c.montoTotalACobrar && (() => {
+                      const solicitado = Number(c.montoTotal)
+                      const aCobrar = Number(c.montoTotalACobrar)
+                      const interesPct = ((aCobrar - solicitado) / solicitado) * 100
+                      const interesTotal = aCobrar - solicitado
+                      return (
+                        <span className="text-xs text-amber-400/80">
+                          💸 Cobro total: ${aCobrar.toLocaleString('es-MX')} MXN
+                          {' '}(+{interesPct.toFixed(1)}% · ${interesTotal.toLocaleString('es-MX')} en intereses)
+                        </span>
+                      )
+                    })()}
+                  </div>
                 )}
               </div>
             )

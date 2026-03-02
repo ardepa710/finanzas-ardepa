@@ -68,8 +68,9 @@ model Credito {
   pagoMinimo  Decimal?       @db.Decimal(10, 2)
   fechaCorte  Int?
   diaPago     Int
-  tasaInteres Decimal?       @db.Decimal(5, 2)
-  activo      Boolean        @default(true)
+  tasaInteres       Decimal?       @db.Decimal(5, 2)
+  montoTotalACobrar Decimal?       @db.Decimal(12, 2)
+  activo            Boolean        @default(true)
   frecuencia  FrecuenciaPago @default(MENSUAL)
   diaSemana   Int?
   fechaBase   DateTime?

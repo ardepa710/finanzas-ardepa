@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       fechaCorte: body.fechaCorte ? Number(body.fechaCorte) : null,
       diaPago: Number(body.diaPago) || 1,
       tasaInteres: body.tasaInteres || null,
+      montoTotalACobrar: body.montoTotalACobrar || null,
       frecuencia: body.frecuencia ?? 'MENSUAL',
       diaSemana: body.diaSemana != null && body.diaSemana !== '' ? Number(body.diaSemana) : null,
       fechaBase: body.fechaBase ? new Date(body.fechaBase) : null,

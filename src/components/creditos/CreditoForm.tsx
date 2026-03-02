@@ -13,6 +13,7 @@ interface CreditoFormData {
   fechaCorte: string
   diaPago: string
   tasaInteres: string
+  montoTotalACobrar: string
   activo: boolean
   frecuencia: 'MENSUAL' | 'QUINCENAL' | 'SEMANAL'
   diaSemana: string
@@ -39,9 +40,17 @@ export default function CreditoForm({ initial, onSave, onCancel }: Props) {
     fechaCorte: initial?.fechaCorte ?? '',
     diaPago: initial?.diaPago ?? '',
     tasaInteres: initial?.tasaInteres ?? '',
+    montoTotalACobrar: initial?.montoTotalACobrar ?? '',
     diaSemana: initial?.diaSemana ?? '',
     fechaBase: initial?.fechaBase ?? '',
   })
+
+  const interesCalculado = (() => {
+    const solicitado = parseFloat(form.montoTotal)
+    const aCobrar = parseFloat(form.montoTotalACobrar)
+    if (!solicitado || !aCobrar || aCobrar <= solicitado) return null
+    return ((aCobrar - solicitado) / solicitado) * 100
+  })()
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -116,6 +125,28 @@ export default function CreditoForm({ initial, onSave, onCancel }: Props) {
           <label className="text-xs text-slate-400 block mb-1">Tasa de interés anual (%)</label>
           <input type="number" step="0.01" min="0" value={form.tasaInteres} onChange={set('tasaInteres')} className="input" placeholder="24.5" />
         </div>
+
+        <div>
+          <label className="text-xs text-slate-400 block mb-1">Monto total que te cobra la institución</label>
+          <input type="number" step="0.01" min="0" value={form.montoTotalACobrar} onChange={set('montoTotalACobrar')} className="input" placeholder="65000" />
+          <p className="text-xs text-slate-500 mt-1">Capital + intereses + comisiones según contrato</p>
+        </div>
+
+        {interesCalculado !== null && (
+          <div className="col-span-2 flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <span className="text-amber-400 text-lg">💸</span>
+            <div>
+              <p className="text-xs text-slate-400">Interés total sobre el capital</p>
+              <p className="font-semibold text-amber-400 text-sm">{interesCalculado.toFixed(2)}% del monto solicitado</p>
+            </div>
+            <div className="ml-auto text-right">
+              <p className="text-xs text-slate-400">Intereses totales</p>
+              <p className="font-semibold text-amber-400 text-sm">
+                ${(parseFloat(form.montoTotalACobrar) - parseFloat(form.montoTotal)).toLocaleString('es-MX')} MXN
+              </p>
+            </div>
+          </div>
+        )}
 
         {tipo === 'TARJETA' && (
           <>
