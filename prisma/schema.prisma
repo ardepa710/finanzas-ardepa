@@ -405,3 +405,49 @@ model Insight {
   @@index([leido])
   @@index([createdAt])
 }
+
+enum CategoriaLogro {
+  DEUDA
+  AHORRO
+  GASTO
+  INVERSION
+  RACHA
+  META
+}
+
+enum TipoStreak {
+  GASTOS_DIARIOS
+  METAS_CONTRIBUCION
+}
+
+model Logro {
+  id           String         @id @default(cuid())
+  codigo       String         @unique
+  nombre       String
+  descripcion  String
+  icono        String
+  categoria    CategoriaLogro
+  xp           Int
+  desbloqueado Boolean        @default(false)
+  fechaLogro   DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@index([desbloqueado])
+  @@index([categoria])
+}
+
+model Streak {
+  id              String     @id @default(cuid())
+  tipo            TipoStreak @unique
+  rachaActual     Int        @default(0)
+  rachaMayor      Int        @default(0)
+  ultimaActividad DateTime?
+  activo          Boolean    @default(true)
+}
+
+model NivelUsuario {
+  id          String @id @default(cuid())
+  xpTotal     Int    @default(0)
+  nivelActual Int    @default(1)
+  xpSiguiente Int    @default(100)
+}
