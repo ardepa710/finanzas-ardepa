@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkGastosStreak } from '@/features/gamificacion/services/streak-service'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -30,5 +31,6 @@ export async function POST(req: NextRequest) {
       fuente: body.fuente ?? 'WEB',
     },
   })
+  checkGastosStreak().catch(() => {}) // fire-and-forget, no bloquea
   return NextResponse.json(gasto, { status: 201 })
 }
