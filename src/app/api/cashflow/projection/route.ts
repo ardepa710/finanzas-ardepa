@@ -3,11 +3,11 @@
  * Projects future cashflow for next N months
  */
 
-import { NextRequest } from 'next/server'
+
 import { projectCashflow } from '@/features/cashflow/calculators/projection'
 import { withErrorHandling, APIError, ErrorCodes } from '@/lib/api-error'
 
-export const GET = withErrorHandling(async (req: NextRequest) => {
+export const GET = withErrorHandling(async (req: Request) => {
   const { searchParams } = new URL(req.url)
 
   // Parse query parameters

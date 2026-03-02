@@ -179,6 +179,6 @@ export async function getDailyExpenseAverage(days: number = 90): Promise<number>
     return 0
   }
 
-  const total = gastos.reduce((sum, g) => sum + g.monto, 0)
+  const total = gastos.reduce((sum, g) => sum + Number(g.monto), 0)
   return total / days
 }
