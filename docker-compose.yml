@@ -22,11 +22,12 @@ services:
       retries: 10
     networks:
       - finanzas-net
+      - nginx-proxy
 
-  # ── Migraciones (corre y termina) ───────────
+  # ── Migraciones + Seed (corre y termina) ────
   migrate:
     build: .
-    command: npx prisma migrate deploy
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
     environment:
       DATABASE_URL: postgresql://${DB_USER:-finanzas}:${DB_PASSWORD}@db:5432/finanzas_ardepa
     depends_on:
@@ -34,6 +35,7 @@ services:
         condition: service_healthy
     networks:
       - finanzas-net
+      - nginx-proxy
     restart: "no"
 
   # ── App Web (Next.js) ────────────────────────
@@ -46,11 +48,13 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER:-finanzas}:${DB_PASSWORD}@db:5432/finanzas_ardepa
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY requerido en .env}
     depends_on:
       migrate:
         condition: service_completed_successfully
     networks:
       - finanzas-net
+      - nginx-proxy
 
   # ── Bot Telegram (polling) ───────────────────
   bot:
@@ -67,6 +71,7 @@ services:
         condition: service_completed_successfully
     networks:
       - finanzas-net
+      - nginx-proxy
 
 volumes:
   pgdata:
@@ -74,3 +79,5 @@ volumes:
 networks:
   finanzas-net:
     driver: bridge
+  nginx-proxy:
+    external: true
