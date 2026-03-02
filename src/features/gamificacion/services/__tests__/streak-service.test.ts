@@ -30,8 +30,8 @@ describe('checkGastosStreak', () => {
 
   it('increments streak when last activity was yesterday', async () => {
     const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(12, 0, 0, 0)
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    yesterday.setUTCHours(12, 0, 0, 0)
 
     vi.mocked(prisma.streak.findFirst).mockResolvedValue({
       id: '1', tipo: 'GASTOS_DIARIOS', rachaActual: 5, rachaMayor: 5, ultimaActividad: yesterday, activo: true
@@ -46,7 +46,7 @@ describe('checkGastosStreak', () => {
 
   it('resets streak when last activity was 2+ days ago', async () => {
     const twoDaysAgo = new Date()
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+    twoDaysAgo.setUTCDate(twoDaysAgo.getUTCDate() - 2)
 
     vi.mocked(prisma.streak.findFirst).mockResolvedValue({
       id: '1', tipo: 'GASTOS_DIARIOS', rachaActual: 10, rachaMayor: 10, ultimaActividad: twoDaysAgo, activo: true
@@ -60,7 +60,7 @@ describe('checkGastosStreak', () => {
 
   it('does not update when activity already registered today', async () => {
     const today = new Date()
-    today.setHours(8, 0, 0, 0)
+    today.setUTCHours(8, 0, 0, 0)
 
     vi.mocked(prisma.streak.findFirst).mockResolvedValue({
       id: '1', tipo: 'GASTOS_DIARIOS', rachaActual: 3, rachaMayor: 3, ultimaActividad: today, activo: true
@@ -74,8 +74,8 @@ describe('checkGastosStreak', () => {
 
   it('updates rachaMayor when current streak exceeds it', async () => {
     const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(12, 0, 0, 0)
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    yesterday.setUTCHours(12, 0, 0, 0)
 
     vi.mocked(prisma.streak.findFirst).mockResolvedValue({
       id: '1', tipo: 'GASTOS_DIARIOS', rachaActual: 7, rachaMayor: 7, ultimaActividad: yesterday, activo: true
@@ -86,5 +86,19 @@ describe('checkGastosStreak', () => {
 
     expect(result.nuevaRacha).toBe(8)
     expect(vi.mocked(prisma.streak.update).mock.calls[0][0].data.rachaMayor).toBe(8)
+  })
+})
+
+describe('getStreaks', () => {
+  it('returns active streaks', async () => {
+    const mockStreaks = [
+      { id: '1', tipo: 'GASTOS_DIARIOS', rachaActual: 3, rachaMayor: 5, ultimaActividad: null, activo: true }
+    ]
+    vi.mocked(prisma.streak.findMany).mockResolvedValue(mockStreaks as any)
+
+    const result = await getStreaks()
+
+    expect(vi.mocked(prisma.streak.findMany).mock.calls[0][0]).toEqual({ where: { activo: true } })
+    expect(result).toEqual(mockStreaks)
   })
 })

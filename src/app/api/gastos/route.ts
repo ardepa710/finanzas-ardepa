@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
       fuente: body.fuente ?? 'WEB',
     },
   })
-  checkGastosStreak().catch(() => {}) // fire-and-forget, no bloquea
+  checkGastosStreak().catch((err) => { // fire-and-forget, no bloquea
+    console.error('[streak] checkGastosStreak failed:', err)
+  })
   return NextResponse.json(gasto, { status: 201 })
 }

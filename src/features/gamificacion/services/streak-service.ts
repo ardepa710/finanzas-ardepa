@@ -1,15 +1,18 @@
 import { prisma } from '@/lib/prisma'
+import type { Streak } from '@/generated/prisma/client'
+
+function toUTCDateString(d: Date): string {
+  return d.toISOString().slice(0, 10) // 'YYYY-MM-DD'
+}
 
 function isSameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear()
-    && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate()
+  return toUTCDateString(a) === toUTCDateString(b)
 }
 
 function isYesterday(date: Date): boolean {
   const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  return isSameDay(date, yesterday)
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+  return toUTCDateString(date) === toUTCDateString(yesterday)
 }
 
 export async function checkGastosStreak(): Promise<{ actualizado: boolean; nuevaRacha: number }> {
@@ -39,6 +42,6 @@ export async function checkGastosStreak(): Promise<{ actualizado: boolean; nueva
   return { actualizado: true, nuevaRacha }
 }
 
-export async function getStreaks() {
+export async function getStreaks(): Promise<Streak[]> {
   return prisma.streak.findMany({ where: { activo: true } })
 }
