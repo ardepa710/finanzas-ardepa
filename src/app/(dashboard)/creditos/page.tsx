@@ -120,7 +120,7 @@ export default function CreditosPage() {
           <EmptyState
             icon="💳"
             message="Sin créditos registrados"
-            action={{ label: 'Agregar crédito', href: '#nuevo' }}
+            action={{ label: 'Agregar crédito', onClick: () => { setShowForm(true); setEditando(null) } }}
           />
         </div>
       ) : (
