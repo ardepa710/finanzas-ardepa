@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import CreditoForm from '@/components/creditos/CreditoForm'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface Credito {
   id: string
@@ -115,9 +116,12 @@ export default function CreditosPage() {
       {loading ? (
         <p className="text-slate-500">Cargando...</p>
       ) : creditos.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-slate-400">Sin créditos registrados.</p>
-          <p className="text-slate-500 text-sm mt-1">Haz clic en "Nuevo crédito" para agregar uno.</p>
+        <div className="card">
+          <EmptyState
+            icon="💳"
+            message="Sin créditos registrados"
+            action={{ label: 'Agregar crédito', href: '#nuevo' }}
+          />
         </div>
       ) : (
         <div className="grid gap-4">

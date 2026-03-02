@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import EmptyState from '@/components/ui/EmptyState'
 
 const CATEGORIAS = ['ALIMENTACION', 'TRANSPORTE', 'ENTRETENIMIENTO', 'SALUD', 'SERVICIOS', 'OTROS'] as const
 type Categoria = typeof CATEGORIAS[number]
@@ -177,8 +178,12 @@ export default function GastosPage() {
       {loading ? (
         <p className="text-slate-500">Cargando...</p>
       ) : gastos.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-slate-400">Sin gastos registrados{filtro ? ` en ${CATEGORIA_LABEL[filtro]}` : ''}.</p>
+        <div className="card">
+          <EmptyState
+            icon="💸"
+            message={filtro ? `Sin gastos en ${CATEGORIA_LABEL[filtro]}` : 'Aún no hay gastos registrados'}
+            description={filtro ? undefined : 'Registra gastos desde Telegram con /gasto o desde aquí'}
+          />
         </div>
       ) : (
         <div className="space-y-2">
