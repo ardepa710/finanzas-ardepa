@@ -54,7 +54,7 @@ async function main() {
     await prisma.nivelUsuario.create({ data: {} })
   }
 
-  console.log('Gamificación seed completado: 15 logros, 2 streaks, 1 nivel')
+  console.log(`Gamificación seed completado: ${LOGROS_SEED.length} logros, 2 streaks, 1 nivel`)
 }
 
 main().catch(console.error).finally(async () => {

@@ -126,4 +126,34 @@ describe('checkLogros', () => {
       })
     )
   })
+
+  it('advances multiple levels when XP gain skips past multiple thresholds', async () => {
+    // User at level 1 (xpSiguiente: 100) with 0 XP gains 600 XP
+    // Should jump: level 1 (threshold 100) → level 2 (threshold 250) → level 3 (threshold 500) → stops at level 3 (needs 500, has 600)
+    // Next: level 3 needs 500, has 600 >= 500 → advance to level 4? No: NIVELES[2] = {nivel:3, xpSiguiente:500}, 600>=500 → advance to 4
+    // NIVELES[3] = {nivel:4, xpSiguiente:900}, 600<900 → stop at nivel 4? Let's trace the loop:
+    // nuevoNivel=1, nivelActualObj={nivel:1,xpSiguiente:100}, 600>=100 → nuevoNivel=2
+    // nuevoNivel=2, nivelActualObj={nivel:2,xpSiguiente:250}, 600>=250 → nuevoNivel=3
+    // nuevoNivel=3, nivelActualObj={nivel:3,xpSiguiente:500}, 600>=500 → nuevoNivel=4
+    // nuevoNivel=4, nivelActualObj={nivel:4,xpSiguiente:900}, 600<900 → break. Final: nivel=4
+    vi.mocked(prisma.logro.findMany).mockResolvedValue([makeLogro('PRIMER_GASTO', 600)] as any)
+    vi.mocked(prisma.gasto.count).mockResolvedValue(1)
+    vi.mocked(prisma.credito.findMany).mockResolvedValue([])
+    vi.mocked(prisma.meta.findMany).mockResolvedValue([])
+    vi.mocked(prisma.inversion.findMany).mockResolvedValue([])
+    vi.mocked(prisma.logro.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.nivelUsuario.findFirst).mockResolvedValue({
+      id: '1', xpTotal: 0, nivelActual: 1, xpSiguiente: 100
+    } as any)
+    vi.mocked(prisma.nivelUsuario.update).mockResolvedValue({} as any)
+
+    await checkLogros()
+
+    expect(vi.mocked(prisma.nivelUsuario.update)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: '1' },
+        data: expect.objectContaining({ xpTotal: 600, nivelActual: 4 }),
+      })
+    )
+  })
 })

@@ -20,7 +20,7 @@ function toNum(v: { toNumber(): number } | number | null | undefined): number {
   return typeof v === 'object' && 'toNumber' in v ? v.toNumber() : Number(v)
 }
 
-async function evaluarLogro(
+function evaluarLogro(
   codigo: string,
   data: {
     gastoCount: number
@@ -28,7 +28,7 @@ async function evaluarLogro(
     metas: Meta[]
     inversiones: Inversion[]
   }
-): Promise<boolean> {
+): boolean {
   const { gastoCount, creditos, metas, inversiones } = data
 
   switch (codigo) {
@@ -48,8 +48,7 @@ async function evaluarLogro(
         toNum(c.montoTotal) > 0 && toNum(c.saldoActual) === 0
       )
     case 'SIN_DEUDA': {
-      const activos = creditos.filter(c => c.activo)
-      return activos.length > 0 && activos.every(c => toNum(c.saldoActual) === 0)
+      return creditos.length > 0 && creditos.every(c => toNum(c.saldoActual) === 0)
     }
     case 'META_PRIMERA':
       return metas.length >= 1
@@ -99,7 +98,7 @@ export async function checkLogros(): Promise<CheckLogrosResult> {
   let xpGanado = 0
 
   for (const logro of pendientes) {
-    const cumple = await evaluarLogro(logro.codigo, { gastoCount, creditos, metas, inversiones })
+    const cumple = evaluarLogro(logro.codigo, { gastoCount, creditos, metas, inversiones })
     if (cumple) {
       const now = new Date()
       await prisma.logro.update({
@@ -115,13 +114,18 @@ export async function checkLogros(): Promise<CheckLogrosResult> {
     const nivel = await prisma.nivelUsuario.findFirst()
     if (nivel) {
       const nuevoXp = nivel.xpTotal + xpGanado
-      const nivelInfo = NIVELES.find(n => n.nivel === nivel.nivelActual) ?? NIVELES[0]
-      const subeNivel = nuevoXp >= nivelInfo.xpSiguiente && nivel.nivelActual < 10
+      let nuevoNivel = nivel.nivelActual
+      while (nuevoNivel < 10) {
+        const nivelActualObj = NIVELES.find(n => n.nivel === nuevoNivel)
+        if (!nivelActualObj || nuevoXp < nivelActualObj.xpSiguiente) break
+        nuevoNivel++
+      }
       await prisma.nivelUsuario.update({
         where: { id: nivel.id },
         data: {
           xpTotal: nuevoXp,
-          nivelActual: subeNivel ? nivel.nivelActual + 1 : nivel.nivelActual,
+          nivelActual: nuevoNivel,
+          xpSiguiente: NIVELES.find(n => n.nivel === nuevoNivel)?.xpSiguiente ?? 99999,
         },
       })
     }
