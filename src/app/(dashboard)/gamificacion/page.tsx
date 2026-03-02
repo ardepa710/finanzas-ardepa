@@ -3,6 +3,7 @@ import { usePerfil, useLogros, useStreaks, useCheckLogros } from '@/features/gam
 import PerfilNivel from '@/features/gamificacion/components/PerfilNivel'
 import LogrosGrid from '@/features/gamificacion/components/LogrosGrid'
 import StreakCard from '@/features/gamificacion/components/StreakCard'
+import type { StreakData } from '@/features/gamificacion/components/StreakCard'
 import { useEffect } from 'react'
 
 export default function GamificacionPage() {
@@ -31,7 +32,7 @@ export default function GamificacionPage() {
           <div className="h-20 bg-slate-800 rounded-xl animate-pulse" />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {streaks?.map((s: any) => <StreakCard key={s.tipo} streak={s} />)}
+            {(streaks as StreakData[])?.map((s) => <StreakCard key={s.tipo} streak={s} />)}
           </div>
         )}
       </section>

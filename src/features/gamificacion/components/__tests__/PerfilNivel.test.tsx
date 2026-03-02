@@ -28,7 +28,7 @@ describe('PerfilNivel', () => {
 
   it('renders progress bar', () => {
     render(<PerfilNivel perfil={mockPerfil} />)
-    const bar = document.querySelector('[data-testid="xp-bar"]')
-    expect(bar).toBeDefined()
+    const bar = screen.getByTestId('xp-bar')
+    expect(bar).not.toBeNull()
   })
 })

@@ -7,6 +7,7 @@ export function usePerfil() {
     queryFn: async () => {
       const res = await fetch('/api/gamificacion/perfil')
       const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
       return json.data
     },
   })
@@ -18,6 +19,7 @@ export function useLogros() {
     queryFn: async () => {
       const res = await fetch('/api/gamificacion/logros')
       const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
       return json.data
     },
   })
@@ -29,6 +31,7 @@ export function useStreaks() {
     queryFn: async () => {
       const res = await fetch('/api/gamificacion/streaks')
       const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
       return json.data
     },
   })
@@ -40,6 +43,7 @@ export function useCheckLogros() {
     mutationFn: async () => {
       const res = await fetch('/api/gamificacion/check-logros', { method: 'POST' })
       const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
       return json.data
     },
     onSuccess: () => {

@@ -1,4 +1,4 @@
-interface StreakData {
+export interface StreakData {
   tipo: string
   rachaActual: number
   rachaMayor: number

@@ -1,19 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import type { CheckLogrosResult, LogroConEstado } from '../types'
 import type { Credito, Meta, Inversion } from '@/generated/prisma/client'
-
-const NIVELES = [
-  { nivel: 1, xpSiguiente: 100 },
-  { nivel: 2, xpSiguiente: 250 },
-  { nivel: 3, xpSiguiente: 500 },
-  { nivel: 4, xpSiguiente: 900 },
-  { nivel: 5, xpSiguiente: 1400 },
-  { nivel: 6, xpSiguiente: 2000 },
-  { nivel: 7, xpSiguiente: 2800 },
-  { nivel: 8, xpSiguiente: 3800 },
-  { nivel: 9, xpSiguiente: 5000 },
-  { nivel: 10, xpSiguiente: 99999 },
-]
+import { NIVELES } from '@/features/gamificacion/constants/niveles'
 
 function toNum(v: { toNumber(): number } | number | null | undefined): number {
   if (v == null) return 0
