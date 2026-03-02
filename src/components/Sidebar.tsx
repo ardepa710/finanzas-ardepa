@@ -12,6 +12,7 @@ const links = [
   { href: '/deuda', label: '💳 Planificación Deuda' },
   { href: '/presupuestos', label: '💰 Presupuestos' },
   { href: '/reportes', label: '📊 Reportes' },
+  { href: '/gamificacion', label: '🏆 Gamificación' },
 ]
 
 export default function Sidebar() {
