@@ -7,8 +7,15 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL!
-  const pool = new Pool({ connectionString })
+  // Strip channel_binding param — not supported by the pg Node.js driver
+  const connectionString = (process.env.DATABASE_URL ?? '').replace(/[?&]channel_binding=[^&]*/g, (m) =>
+    m.startsWith('?') ? '?' : ''
+  )
+  const isNeon = connectionString.includes('neon.tech')
+  const pool = new Pool({
+    connectionString,
+    ...(isNeon ? { ssl: true } : {}),
+  })
   const adapter = new PrismaPg(pool)
   return new PrismaClient({
     adapter,
