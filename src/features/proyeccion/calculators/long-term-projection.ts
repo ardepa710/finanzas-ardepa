@@ -69,8 +69,10 @@ export async function calcularProyeccionLargoPlazo(
   const gastosAnuales = gastoDiarioPromedio * 365
 
   // 4. Calculate initial annual debt payment
+  // normalizeToMonthly converts per-period amounts (QUINCENAL ×2, SEMANAL ×4.33) to monthly,
+  // then ×12 gives annual. MENSUAL credits use pagoMensual directly (×1 ×12).
   const pagoDeudaAnualInicial = creditos.reduce(
-    (sum, credito) => sum + Number(credito.pagoMensual) * 12,
+    (sum, credito) => sum + normalizeToMonthly(Number(credito.pagoMensual), credito.frecuencia) * 12,
     0
   )
 

@@ -8,6 +8,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { CashflowProjection, MonthProjection, IncomeEvent } from '../types'
+import { normalizeToMonthly } from '@/features/ratios/calculators/helpers'
 import {
   calculateIncomeOccurrences,
   getDailyExpenseAverage,
@@ -68,8 +69,9 @@ export async function projectCashflow(
     const totalIngresos = incomeEvents.reduce((sum, event) => sum + event.monto, 0)
 
     // Calculate fixed expenses (debt payments)
+    // normalizeToMonthly converts per-period payments (QUINCENAL ×2, SEMANAL ×4.33) to monthly equivalent.
     const totalDebtPayments = creditos.reduce((sum, credito) => {
-      return sum + credito.pagoMensual.toNumber()
+      return sum + normalizeToMonthly(credito.pagoMensual.toNumber(), credito.frecuencia)
     }, 0)
 
     // Estimate variable expenses based on daily average

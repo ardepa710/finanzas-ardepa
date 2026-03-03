@@ -246,6 +246,54 @@ describe('calcularResumenAhorro con gastosFijos', () => {
     expect(cobro0.disponible).toBeLessThan(22000)
   })
 
+  it('SEMANAL gasto with QUINCENAL income counts multiple occurrences in window', () => {
+    // HOY = Mar 5. QUINCENAL income fechaBase=Mar 2 → cobros: Mar 16, Mar 30, Apr 13
+    // Window cobro[0]: (Mar 16, Mar 30) = 14 days
+    // SEMANAL gasto fechaBase=Mar 10 → from Mar 16: Mar 17, Mar 24 (both < Mar 30) → 2 hits
+    const fuentes: FuenteIngresoInput[] = [{
+      nombre: 'Salario',
+      monto: 22000,
+      frecuencia: 'QUINCENAL',
+      fechaBase: new Date(2026, 2, 2),
+    }]
+    const gastosFijos: GastoFijoInput[] = [{
+      nombre: 'Mercado',
+      monto: 800,
+      categoria: 'ALIMENTACION',
+      frecuencia: 'SEMANAL',
+      fechaBase: new Date(2026, 2, 10), // Mar 10 → next from Mar 16: Mar 17, Mar 24
+    }]
+    const result = calcularResumenAhorro([], fuentes, HOY, 3, gastosFijos)
+    const cobro0 = result.cobros[0] // fecha=Mar 16, nextCobro=Mar 30
+    // Must account for 2 weekly expenses (800 × 2 = 1600), not just 800
+    expect(cobro0.desgloseGastosFijos).toHaveLength(1)
+    expect(cobro0.desgloseGastosFijos[0].monto).toBe(1600)
+    expect(cobro0.disponible).toBe(22000 - 1600)
+  })
+
+  it('SEMANAL gasto with MENSUAL income counts all 4-5 occurrences in ~30-day window', () => {
+    // HOY = Mar 5. MENSUAL income diaMes=15 → cobros: Mar 15, Apr 15, May 15
+    // Window cobro[0]: (Mar 15, Apr 15) = 31 days
+    // SEMANAL gasto fechaBase=Mar 2 → from Mar 15: Mar 16, 23, 30, Apr 6, 13 → 5 hits < Apr 15
+    const fuentes: FuenteIngresoInput[] = [{
+      nombre: 'Salario',
+      monto: 30000,
+      frecuencia: 'MENSUAL',
+      diaMes: 15,
+    }]
+    const gastosFijos: GastoFijoInput[] = [{
+      nombre: 'Gym',
+      monto: 200,
+      categoria: 'SALUD',
+      frecuencia: 'SEMANAL',
+      fechaBase: new Date(2026, 2, 2), // Mar 2 → from Mar 15: Mar 16, 23, 30, Apr 6, 13
+    }]
+    const result = calcularResumenAhorro([], fuentes, HOY, 3, gastosFijos)
+    const cobro0 = result.cobros[0] // fecha=Mar 15, nextCobro=Apr 15
+    // 5 weekly occurrences in the ~31-day window
+    expect(cobro0.desgloseGastosFijos[0].monto).toBe(200 * 5)
+  })
+
   it('backward compatible: works with no gastosFijos argument', () => {
     const fuentes: FuenteIngresoInput[] = [{
       nombre: 'Salario',

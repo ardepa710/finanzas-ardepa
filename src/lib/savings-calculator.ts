@@ -182,7 +182,8 @@ export function calcularResumenAhorro(
     const nextCobroFecha = cobrosFinal[idx + 1]?.fecha ?? addDays(fecha, 30)
     const desgloseGastosFijos: DesgloseCobro[] = []
     for (const gf of gastosFijos) {
-      // Next occurrence of this gasto fijo from this cobro's date
+      // Fetch enough occurrences to cover the full window.
+      // SEMANAL in a ~30-day window can repeat up to 5 times, so 8 is a safe upper bound.
       const occurrences = getNextOccurrences(
         {
           nombre: gf.nombre,
@@ -193,11 +194,12 @@ export function calcularResumenAhorro(
           diaSemana: gf.diaSemana,
         },
         fecha,
-        1
+        8
       )
-      const nextOcc = occurrences[0]
-      if (nextOcc && nextOcc < nextCobroFecha) {
-        desgloseGastosFijos.push({ creditoNombre: gf.nombre, monto: gf.monto })
+      const enVentana = occurrences.filter(o => o < nextCobroFecha)
+      if (enVentana.length > 0) {
+        const montoTotal = Math.round(gf.monto * enVentana.length * 100) / 100
+        desgloseGastosFijos.push({ creditoNombre: gf.nombre, monto: montoTotal })
       }
     }
 

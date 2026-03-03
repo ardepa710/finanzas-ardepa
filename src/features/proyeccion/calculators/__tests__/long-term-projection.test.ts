@@ -447,6 +447,34 @@ describe('calcularProyeccionLargoPlazo', () => {
     expect(result.resumen.deudaEliminada).toBe(15000)
   })
 
+  it('should normalize QUINCENAL credit payments to monthly correctly', async () => {
+    vi.mocked(prisma.activo.findMany).mockResolvedValue([])
+    vi.mocked(prisma.credito.findMany).mockResolvedValue([
+      { saldoActual: 10000, pagoMensual: 500, frecuencia: 'QUINCENAL', activo: true } as any,
+    ])
+    vi.mocked(prisma.fuenteIngreso.findMany).mockResolvedValue([])
+    vi.mocked(prisma.gasto.findMany).mockResolvedValue([])
+
+    const result = await calcularProyeccionLargoPlazo(1, 0)
+
+    // QUINCENAL pagoMensual=500 → monthly = 500×2 = 1000 → annual = 1000×12 = 12000
+    expect(result.proyecciones[0].pagoDeudaAnual).toBe(500 * 2 * 12)
+  })
+
+  it('should normalize SEMANAL credit payments to monthly correctly', async () => {
+    vi.mocked(prisma.activo.findMany).mockResolvedValue([])
+    vi.mocked(prisma.credito.findMany).mockResolvedValue([
+      { saldoActual: 5000, pagoMensual: 300, frecuencia: 'SEMANAL', activo: true } as any,
+    ])
+    vi.mocked(prisma.fuenteIngreso.findMany).mockResolvedValue([])
+    vi.mocked(prisma.gasto.findMany).mockResolvedValue([])
+
+    const result = await calcularProyeccionLargoPlazo(1, 0)
+
+    // SEMANAL pagoMensual=300 → monthly = 300×4.33 = 1299 → annual = 1299×12 = 15588
+    expect(result.proyecciones[0].pagoDeudaAnual).toBeCloseTo(300 * 4.33 * 12, 1)
+  })
+
   it('should handle multiple income sources', async () => {
     // Arrange
     vi.mocked(prisma.activo.findMany).mockResolvedValue([])
